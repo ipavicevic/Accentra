@@ -28,11 +28,17 @@ class TrayApp : ApplicationContext
 
         _trayIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = LoadIcon(),
             Text = "Accentra",
             ContextMenuStrip = menu,
             Visible = true,
         };
+    }
+
+    private static Icon LoadIcon()
+    {
+        using var stream = typeof(TrayApp).Assembly.GetManifestResourceStream("Accentra.icon.ico")!;
+        return new Icon(stream, SystemInformation.SmallIconSize);
     }
 
     protected override void Dispose(bool disposing)
