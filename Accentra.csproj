@@ -13,6 +13,7 @@
     <Description>System tray app for accented character input on Windows</Description>
     <Copyright>© 2026 Ivan Pavicevic</Copyright>
     <NeutralLanguage>en</NeutralLanguage>
+    <Version>1.0.9</Version>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="accent-maps.json" />

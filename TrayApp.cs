@@ -42,7 +42,7 @@ class TrayApp : ApplicationContext
         _trayIcon = new NotifyIcon
         {
             Icon = LoadIcon(),
-            Text = "Accentra",
+            Text = $"Accentra {Application.ProductVersion}",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -60,7 +60,7 @@ class TrayApp : ApplicationContext
             timer.Stop();
             timer.Dispose();
             MessageBox.Show(
-                "Accentra is now running in your system tray.\n\n" +
+                $"Accentra {Application.ProductVersion} is now running in your system tray.\n\n" +
                 "Right-click the 'á' icon in the tray for options. Accentra will start automatically with Windows.",
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,

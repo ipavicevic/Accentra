@@ -42,7 +42,7 @@ static class Installer
             uninstall.SetValue("UninstallString", $"\"{InstallPath}\" --uninstall");
             uninstall.SetValue("DisplayIcon", InstallPath);
             uninstall.SetValue("Publisher", AppName);
-            uninstall.SetValue("DisplayVersion", "1.0.0");
+            uninstall.SetValue("DisplayVersion", Application.ProductVersion);
             uninstall.SetValue("NoModify", 1, RegistryValueKind.DWord);
             uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
         }
