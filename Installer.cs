@@ -47,6 +47,8 @@ static class Installer
             uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
         }
 
+        AddToUserPath();
+
         Logger.Log($"Install complete — launching {InstallPath}");
         Process.Start(InstallPath, "--first-run");
     }
@@ -58,12 +60,37 @@ static class Installer
 
         Registry.CurrentUser.DeleteSubKey(UninstallKey, throwOnMissingSubKey: false);
 
+        RemoveFromUserPath();
+
         // Schedule folder deletion after process exits (cmd waits 2s then removes the directory)
         Process.Start(new ProcessStartInfo("cmd.exe", $"/c timeout /t 2 /nobreak & rd /s /q \"{InstallDir}\"")
         {
             WindowStyle = ProcessWindowStyle.Hidden,
             CreateNoWindow = true,
         });
+    }
+
+    private static void AddToUserPath()
+    {
+        var current = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? "";
+        var parts = current.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Any(p => string.Equals(p.TrimEnd('\\'), InstallDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+        {
+            Logger.Log("InstallDir already in user PATH");
+            return;
+        }
+        var newPath = current.TrimEnd(';') + ";" + InstallDir;
+        Environment.SetEnvironmentVariable("Path", newPath, EnvironmentVariableTarget.User);
+        Logger.Log($"Added {InstallDir} to user PATH");
+    }
+
+    private static void RemoveFromUserPath()
+    {
+        var current = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? "";
+        var parts = current.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                           .Where(p => !string.Equals(p.TrimEnd('\\'), InstallDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
+        Environment.SetEnvironmentVariable("Path", string.Join(';', parts), EnvironmentVariableTarget.User);
+        Logger.Log($"Removed {InstallDir} from user PATH");
     }
 
     public static bool IsAutoStartEnabled()
