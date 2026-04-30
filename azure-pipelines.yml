@@ -51,37 +51,81 @@ steps:
       Authorization = "Bearer $(GITHUB_PAT)"
       Accept        = 'application/vnd.github+json'
     }
+    $repo = 'ipavicevic/Accentra'
+    $tag  = "v$(AppVersion)"
 
-    # Create the release
-    $body = @{
-      tag_name = "v$(AppVersion)"
-      name     = "Accentra v$(AppVersion)"
-      body     = "Download ``Accentra.exe``, run it once — it installs itself and starts with Windows."
-      draft    = $false
-      prerelease = $false
-    } | ConvertTo-Json
+    # Get existing release for this tag, or create one
+    try {
+      $release = Invoke-RestMethod `
+        -Uri "https://api.github.com/repos/$repo/releases/tags/$tag" `
+        -Method Get -Headers $headers
+      Write-Host "Reusing existing release id=$($release.id)"
+    } catch {
+      $body = @{
+        tag_name = $tag
+        name     = "Accentra $tag"
+        body     = "Download ``Accentra.exe``, run it once — it installs itself and starts with Windows."
+        draft    = $false
+        prerelease = $false
+      } | ConvertTo-Json
 
-    $release = Invoke-RestMethod `
-      -Uri 'https://api.github.com/repos/ipavicevic/Accentra/releases' `
-      -Method Post -Headers $headers -Body $body -ContentType 'application/json'
+      $release = Invoke-RestMethod `
+        -Uri "https://api.github.com/repos/$repo/releases" `
+        -Method Post -Headers $headers -Body $body -ContentType 'application/json'
+      Write-Host "Created release id=$($release.id)"
+    }
 
-    Write-Host "Created release id=$($release.id)"
+    function Upload-Asset($localPath, $assetName, $contentType) {
+      # Delete existing asset of the same name
+      $existing = $release.assets | Where-Object { $_.name -eq $assetName }
+      if ($existing) {
+        Invoke-RestMethod `
+          -Uri "https://api.github.com/repos/$repo/releases/assets/$($existing.id)" `
+          -Method Delete -Headers $headers | Out-Null
+        Write-Host "Deleted existing asset $assetName"
+      }
+      $uploadUrl = $release.upload_url -replace '\{\?name,label\}', "?name=$assetName"
+      Invoke-RestMethod `
+        -Uri $uploadUrl -Method Post -Headers $headers `
+        -InFile $localPath -ContentType $contentType | Out-Null
+      Write-Host "Uploaded $assetName"
+    }
 
-    # Upload Accentra.exe
-    $exePath = "$(Build.ArtifactStagingDirectory)\Accentra.exe"
-    $uploadUrl = $release.upload_url -replace '\{\?name,label\}', '?name=Accentra.exe'
-    Invoke-RestMethod `
-      -Uri $uploadUrl -Method Post -Headers $headers `
-      -InFile $exePath -ContentType 'application/octet-stream'
+    Upload-Asset "$(Build.ArtifactStagingDirectory)\Accentra.exe" 'Accentra.exe' 'application/octet-stream'
+    Upload-Asset "$(Build.ArtifactStagingDirectory)\accent-maps.json" 'accent-maps.json' 'application/json'
 
-    # Upload accent-maps.json
-    $jsonPath = "$(Build.ArtifactStagingDirectory)\accent-maps.json"
-    $uploadUrl = $release.upload_url -replace '\{\?name,label\}', '?name=accent-maps.json'
-    Invoke-RestMethod `
-      -Uri $uploadUrl -Method Post -Headers $headers `
-      -InFile $jsonPath -ContentType 'application/json'
-
-    Write-Host "Published to https://github.com/ipavicevic/Accentra/releases/tag/v$(AppVersion)"
+    Write-Host "Published to https://github.com/$repo/releases/tag/$tag"
   displayName: 'Publish to GitHub Releases'
+  env:
+    GITHUB_PAT: $(GITHUB_PAT)
+
+- pwsh: |
+    $headers = @{
+      Authorization = "Bearer $(GITHUB_PAT)"
+      Accept        = 'application/vnd.github+json'
+    }
+
+    function Push-File($localPath, $repoPath) {
+      $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes($localPath))
+      $uri = "https://api.github.com/repos/ipavicevic/Accentra/contents/$repoPath"
+
+      # Get current SHA if file already exists (needed for updates)
+      $sha = $null
+      try {
+        $existing = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+        $sha = $existing.sha
+      } catch {}
+
+      $body = @{ message = "docs: update landing page [skip ci]"; content = $content }
+      if ($sha) { $body.sha = $sha }
+
+      Invoke-RestMethod -Uri $uri -Method Put -Headers $headers `
+        -Body ($body | ConvertTo-Json) -ContentType 'application/json' | Out-Null
+      Write-Host "Pushed $repoPath"
+    }
+
+    Push-File "$(Build.SourcesDirectory)\docs\index.html" "docs/index.html"
+    Write-Host "Landing page updated: https://ipavicevic.github.io/Accentra"
+  displayName: 'Push landing page to GitHub'
   env:
     GITHUB_PAT: $(GITHUB_PAT)
