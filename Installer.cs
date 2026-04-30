@@ -1,0 +1,82 @@
+using Microsoft.Win32;
+using System.Diagnostics;
+
+namespace Accentra;
+
+static class Installer
+{
+    private const string AppName = "Accentra";
+
+    private static readonly string InstallDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+
+    public static readonly string InstallPath = Path.Combine(InstallDir, $"{AppName}.exe");
+
+    private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Accentra";
+
+    public static bool IsInstalledLocation() =>
+        string.Equals(Environment.ProcessPath, InstallPath, StringComparison.OrdinalIgnoreCase);
+
+    public static void Install()
+    {
+        Directory.CreateDirectory(InstallDir);
+        File.Copy(Environment.ProcessPath!, InstallPath, overwrite: true);
+
+        var sourceJson = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "accent-maps.json");
+        var destJson = Path.Combine(InstallDir, "accent-maps.json");
+        if (File.Exists(sourceJson))
+            File.Copy(sourceJson, destJson, overwrite: true);
+
+        using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!)
+            run.SetValue(AppName, $"\"{InstallPath}\"");
+
+        using (var uninstall = Registry.CurrentUser.CreateSubKey(UninstallKey))
+        {
+            uninstall.SetValue("DisplayName", AppName);
+            uninstall.SetValue("UninstallString", $"\"{InstallPath}\" --uninstall");
+            uninstall.SetValue("DisplayIcon", InstallPath);
+            uninstall.SetValue("Publisher", AppName);
+            uninstall.SetValue("DisplayVersion", "1.0.0");
+            uninstall.SetValue("NoModify", 1, RegistryValueKind.DWord);
+            uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+        }
+
+        Process.Start(InstallPath);
+    }
+
+    public static void Uninstall()
+    {
+        using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true))
+            run?.DeleteValue(AppName, throwOnMissingValue: false);
+
+        Registry.CurrentUser.DeleteSubKey(UninstallKey, throwOnMissingSubKey: false);
+
+        // Schedule folder deletion after process exits (cmd waits 2s then removes the directory)
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/c timeout /t 2 /nobreak & rd /s /q \"{InstallDir}\"")
+        {
+            WindowStyle = ProcessWindowStyle.Hidden,
+            CreateNoWindow = true,
+        });
+    }
+
+    public static bool IsAutoStartEnabled()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey);
+        return key?.GetValue(AppName) is not null;
+    }
+
+    public static void ToggleAutoStart()
+    {
+        if (IsAutoStartEnabled())
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
+            key?.DeleteValue(AppName, throwOnMissingValue: false);
+        }
+        else
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
+            key.SetValue(AppName, $"\"{InstallPath}\"");
+        }
+    }
+}
