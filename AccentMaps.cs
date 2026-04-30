@@ -4,6 +4,8 @@ namespace Accentra;
 
 static class AccentMaps
 {
+    private const string ResourceName = "Accentra.accent-maps.json";
+
     private static readonly Dictionary<char, char[]> Maps = LoadMaps();
 
     private static Dictionary<char, char[]> LoadMaps()
@@ -13,39 +15,27 @@ static class AccentMaps
 
         if (File.Exists(jsonPath))
         {
-            try
-            {
-                var json = File.ReadAllText(jsonPath);
-                var raw = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                if (raw != null)
-                    return raw
-                        .Where(kv => kv.Key.Length == 1)
-                        .ToDictionary(kv => kv.Key[0], kv => kv.Value.ToCharArray());
-            }
-            catch { }
+            try { return Parse(File.ReadAllText(jsonPath)); }
+            catch { /* malformed user JSON — fall through to embedded defaults */ }
         }
 
-        return Defaults;
+        return Parse(ReadEmbedded());
     }
 
-    private static readonly Dictionary<char, char[]> Defaults = new()
+    private static Dictionary<char, char[]> Parse(string json)
     {
-        ['a'] = ['á', 'à', 'â', 'ä', 'ã', 'å', 'a'],
-        ['c'] = ['č', 'ć', 'ç', 'c'],
-        ['d'] = ['đ', 'ď', 'ð', 'd'],
-        ['e'] = ['é', 'è', 'ê', 'ë', 'ě', 'e'],
-        ['g'] = ['ğ', 'g'],
-        ['i'] = ['í', 'ì', 'î', 'ï', 'i'],
-        ['l'] = ['ł', 'ľ', 'l'],
-        ['n'] = ['ñ', 'ň', 'n'],
-        ['o'] = ['ó', 'ò', 'ô', 'ö', 'õ', 'ø', 'o'],
-        ['r'] = ['ř', 'r'],
-        ['s'] = ['š', 'ś', 'ş', 's'],
-        ['t'] = ['ť', 'þ', 't'],
-        ['u'] = ['ú', 'ù', 'û', 'ü', 'ů', 'u'],
-        ['y'] = ['ý', 'ÿ', 'y'],
-        ['z'] = ['ž', 'ź', 'ż', 'z'],
-    };
+        var raw = JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
+        return raw
+            .Where(kv => kv.Key.Length == 1)
+            .ToDictionary(kv => kv.Key[0], kv => kv.Value.ToCharArray());
+    }
+
+    private static string ReadEmbedded()
+    {
+        using var stream = typeof(AccentMaps).Assembly.GetManifestResourceStream(ResourceName)!;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
 
     // vkCode is always in the A-Z range (0x41-0x5A); shift determines case.
     public static char[]? GetVariants(uint vkCode, bool shifted)
