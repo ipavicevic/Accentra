@@ -8,6 +8,11 @@
     <AssemblyName>Accentra</AssemblyName>
     <RootNamespace>Accentra</RootNamespace>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Company>Ivan Pavicevic</Company>
+    <Product>Accentra</Product>
+    <Description>System tray app for accented character input on Windows</Description>
+    <Copyright>© 2026 Ivan Pavicevic</Copyright>
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="accent-maps.json" />
