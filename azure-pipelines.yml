@@ -45,3 +45,43 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'Accentra-$(AppVersion)'
     publishLocation: 'Container'
+
+- pwsh: |
+    $headers = @{
+      Authorization = "Bearer $(GITHUB_PAT)"
+      Accept        = 'application/vnd.github+json'
+    }
+
+    # Create the release
+    $body = @{
+      tag_name = "v$(AppVersion)"
+      name     = "Accentra v$(AppVersion)"
+      body     = "Download ``Accentra.exe``, run it once — it installs itself and starts with Windows."
+      draft    = $false
+      prerelease = $false
+    } | ConvertTo-Json
+
+    $release = Invoke-RestMethod `
+      -Uri 'https://api.github.com/repos/ipavicevic/Accentra/releases' `
+      -Method Post -Headers $headers -Body $body -ContentType 'application/json'
+
+    Write-Host "Created release id=$($release.id)"
+
+    # Upload Accentra.exe
+    $exePath = "$(Build.ArtifactStagingDirectory)\Accentra.exe"
+    $uploadUrl = $release.upload_url -replace '\{\?name,label\}', '?name=Accentra.exe'
+    Invoke-RestMethod `
+      -Uri $uploadUrl -Method Post -Headers $headers `
+      -InFile $exePath -ContentType 'application/octet-stream'
+
+    # Upload accent-maps.json
+    $jsonPath = "$(Build.ArtifactStagingDirectory)\accent-maps.json"
+    $uploadUrl = $release.upload_url -replace '\{\?name,label\}', '?name=accent-maps.json'
+    Invoke-RestMethod `
+      -Uri $uploadUrl -Method Post -Headers $headers `
+      -InFile $jsonPath -ContentType 'application/json'
+
+    Write-Host "Published to https://github.com/ipavicevic/Accentra/releases/tag/v$(AppVersion)"
+  displayName: 'Publish to GitHub Releases'
+  env:
+    GITHUB_PAT: $(GITHUB_PAT)
