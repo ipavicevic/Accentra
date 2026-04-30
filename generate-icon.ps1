@@ -13,13 +13,15 @@ function New-IconBitmap($size) {
     $bg.Dispose()
 
     # Draw 'á' centred
-    $fontSize = [float]($size * 0.60)
+    $fontSize = [float]($size * 0.80)
     $font = New-Object System.Drawing.Font("Georgia", $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
     $fg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
     $sf = New-Object System.Drawing.StringFormat
     $sf.Alignment = [System.Drawing.StringAlignment]::Center
     $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
-    $rect = New-Object System.Drawing.RectangleF(0, 0, $size, $size)
+    # Shift the rect up so the base 'a' (not the whole 'á') sits at the optical centre.
+    $offsetY = [float]($fontSize * 0.12)
+    $rect = New-Object System.Drawing.RectangleF(0, -$offsetY, $size, $size)
     $g.DrawString([string][char]0x00E1, $font, $fg, $rect, $sf)   # á = U+00E1
 
     $font.Dispose(); $fg.Dispose(); $sf.Dispose(); $g.Dispose()

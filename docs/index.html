@@ -40,12 +40,20 @@
       background: #fff;
       border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 48px; font-weight: 700; color: var(--blue);
+      font-size: 72px; font-weight: 700; color: var(--blue);
+      line-height: 1;
       margin-bottom: 28px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
     }
+    /* Shift the glyph up so the base 'a' (not the whole 'á') sits at the optical centre. */
+    .hero-icon span { display: block; transform: translateY(-7px); }
+
+    .hero .credit { margin-top: 18px; font-size: 0.9rem; opacity: 0.85; }
+    .hero .credit a { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+    .hero .credit a:hover { opacity: 0.85; }
 
     .hero h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .hero p { color: inherit; }
     .hero .tagline { font-size: 1.25rem; opacity: 0.88; margin: 12px 0 40px; }
 
     .btn-download {
@@ -214,7 +222,7 @@
 
 <!-- Hero -->
 <header class="hero">
-  <div class="hero-icon">á</div>
+  <div class="hero-icon"><span>á</span></div>
   <h1>Accentra</h1>
   <p class="tagline">Accented characters in any Windows app — no language switch, no alt codes.</p>
   <a class="btn-download"
@@ -222,6 +230,7 @@
     <span class="icon">&#8659;</span> Download Accentra.exe
   </a>
   <p class="note">Free &middot; Windows 10 / 11 &middot; No install required — just run it</p>
+  <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
 </header>
 
 <!-- How it works -->
