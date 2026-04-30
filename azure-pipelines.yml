@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    exclude:
+      - '*'
+  tags:
+    include:
+      - 'v*'
+
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  rid: 'win-x64'
+
+steps:
+- pwsh: |
+    $version = "$(Build.SourceBranchName)".TrimStart('v')
+    Write-Host "##vso[task.setvariable variable=AppVersion]$version"
+    Write-Host "Version: $version"
+  displayName: 'Extract version from tag'
+
+- task: UseDotNet@2
+  displayName: 'Use .NET 8 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+
+- script: >
+    dotnet publish Accentra.csproj
+    -c $(buildConfiguration)
+    -r $(rid)
+    --self-contained true
+    -p:PublishSingleFile=true
+    -p:IncludeNativeLibrariesForSelfExtract=true
+    -p:Version=$(AppVersion)
+    -o $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish self-contained EXE'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Accentra-$(AppVersion)'
+    publishLocation: 'Container'
