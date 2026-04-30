@@ -10,9 +10,6 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="accent-maps.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <EmbeddedResource Include="accent-maps.json" />
     <EmbeddedResource Include="icon.ico" />
   </ItemGroup>

@@ -39,18 +39,10 @@ steps:
     -o $(Build.ArtifactStagingDirectory)\publish
   displayName: 'Publish self-contained EXE'
 
-- pwsh: |
-    $publish = "$(Build.ArtifactStagingDirectory)\publish"
-    $zipPath = "$(Build.ArtifactStagingDirectory)\Accentra.zip"
-    Compress-Archive -Path "$publish\Accentra.exe","$publish\accent-maps.json" `
-                     -DestinationPath $zipPath -Force
-    Write-Host "Created $zipPath"
-  displayName: 'Bundle EXE + JSON into ZIP'
-
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifact'
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Accentra.zip'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\publish\Accentra.exe'
     ArtifactName: 'Accentra-$(AppVersion)'
     publishLocation: 'Container'
 
@@ -72,7 +64,7 @@ steps:
       $body = @{
         tag_name = $tag
         name     = "Accentra $tag"
-        body     = "Download ``Accentra.zip``, extract it, then run ``Accentra.exe`` once — it installs itself and starts with Windows."
+        body     = "Download ``Accentra.exe`` and run it once — it installs itself and starts with Windows."
         draft    = $false
         prerelease = $false
       } | ConvertTo-Json
@@ -99,7 +91,7 @@ steps:
       Write-Host "Uploaded $assetName"
     }
 
-    Upload-Asset "$(Build.ArtifactStagingDirectory)\Accentra.zip" 'Accentra.zip' 'application/zip'
+    Upload-Asset "$(Build.ArtifactStagingDirectory)\publish\Accentra.exe" 'Accentra.exe' 'application/octet-stream'
 
     Write-Host "Published to https://github.com/$repo/releases/tag/$tag"
   displayName: 'Publish to GitHub Releases'

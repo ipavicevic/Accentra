@@ -23,21 +23,13 @@ static class Installer
         Directory.CreateDirectory(InstallDir);
         File.Copy(Environment.ProcessPath!, InstallPath, overwrite: true);
 
-        // Always ensure accent-maps.json lives next to the installed EXE, but preserve user edits on upgrade.
+        // Extract embedded accent-maps.json on first install only — preserve user edits on upgrade.
         var destJson = Path.Combine(InstallDir, "accent-maps.json");
         if (!File.Exists(destJson))
         {
-            var sourceJson = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "accent-maps.json");
-            if (File.Exists(sourceJson))
-            {
-                File.Copy(sourceJson, destJson);
-            }
-            else
-            {
-                using var stream = typeof(Installer).Assembly.GetManifestResourceStream("Accentra.accent-maps.json")!;
-                using var file = File.Create(destJson);
-                stream.CopyTo(file);
-            }
+            using var stream = typeof(Installer).Assembly.GetManifestResourceStream("Accentra.accent-maps.json")!;
+            using var file = File.Create(destJson);
+            stream.CopyTo(file);
         }
 
         using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!)
@@ -54,7 +46,7 @@ static class Installer
             uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
         }
 
-        Process.Start(InstallPath);
+        Process.Start(InstallPath, "--first-run");
     }
 
     public static void Uninstall()

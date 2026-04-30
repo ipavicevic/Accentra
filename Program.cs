@@ -23,6 +23,6 @@ static class Program
 
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new TrayApp());
+        Application.Run(new TrayApp(firstRun: args.Contains("--first-run")));
     }
 }
