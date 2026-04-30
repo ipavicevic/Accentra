@@ -13,6 +13,7 @@ class KeyboardHook : IDisposable
         _engine = engine;
         _proc = HookCallback;
         _hookHandle = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, _proc, IntPtr.Zero, 0);
+        Logger.Log(_hookHandle != IntPtr.Zero ? "Keyboard hook registered" : "Keyboard hook FAILED to register");
     }
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)

@@ -61,10 +61,6 @@ class TrayApp : ApplicationContext
             timer.Dispose();
             MessageBox.Show(
                 "Accentra is now running in your system tray.\n\n" +
-                "How to use:\n" +
-                "  • Hold any letter key for ~0.5 s to enter accent mode\n" +
-                "  • Tap the same key to cycle through variants  (e → é → è → ê → ë)\n" +
-                "  • Press a different key or wait 1 second to confirm\n\n" +
                 "Right-click the 'á' icon in the tray for options. Accentra will start automatically with Windows.",
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,

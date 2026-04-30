@@ -20,6 +20,7 @@ static class Installer
 
     public static void Install()
     {
+        Logger.Log($"Installing from {Environment.ProcessPath}");
         Directory.CreateDirectory(InstallDir);
         File.Copy(Environment.ProcessPath!, InstallPath, overwrite: true);
 
@@ -46,6 +47,7 @@ static class Installer
             uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
         }
 
+        Logger.Log($"Install complete — launching {InstallPath}");
         Process.Start(InstallPath, "--first-run");
     }
 
