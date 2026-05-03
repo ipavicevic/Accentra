@@ -25,6 +25,11 @@ jobs:
         run: |
           $v = '${{ github.ref_name }}'.TrimStart('v')
           echo "value=$v" >> $env:GITHUB_OUTPUT
+          # MSIX requires 4 purely numeric components — strip any pre-release suffix
+          $numeric = ($v -split '-')[0]
+          $parts = $numeric -split '\.'
+          while ($parts.Count -lt 4) { $parts += '0' }
+          echo "msix=$($parts[0..3] -join '.')" >> $env:GITHUB_OUTPUT
 
       - name: Publish EXE
         shell: pwsh
@@ -48,7 +53,7 @@ jobs:
           New-Item -ItemType Directory -Force msix-layout | Out-Null
           Copy-Item publish\Accentra.exe msix-layout\
           (Get-Content Package.appxmanifest) `
-            -replace 'Version="0\.0\.0\.0"', 'Version="${{ steps.version.outputs.value }}.0"' |
+            -replace 'Version="0\.0\.0\.0"', 'Version="${{ steps.version.outputs.msix }}"' |
             Set-Content msix-layout\AppxManifest.xml
           Copy-Item -Recurse Assets msix-layout\
 
