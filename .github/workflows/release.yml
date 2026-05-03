@@ -64,21 +64,14 @@ jobs:
                  Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
           & "$($sdk.FullName)\x64\makeappx.exe" pack /d msix-layout /p publish\Accentra.msix /o
 
-      - name: Sign MSIX (test certificate)
+      - name: Sign MSIX
         shell: pwsh
         run: |
-          $cert = New-SelfSignedCertificate `
-            -Type Custom `
-            -Subject "CN=53BA64DB-AB37-4AC8-A5FD-E1A2E5D8149A" `
-            -KeyUsage DigitalSignature `
-            -FriendlyName "Accentra Test" `
-            -CertStoreLocation "Cert:\CurrentUser\My" `
-            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
-          $pwd = ConvertTo-SecureString "test" -AsPlainText -Force
-          Export-PfxCertificate -Cert $cert -FilePath accentra-test.pfx -Password $pwd | Out-Null
+          $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERT }}")
+          [IO.File]::WriteAllBytes("accentra.pfx", $pfxBytes)
           $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
                  Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
-          & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra-test.pfx /p test publish\Accentra.msix
+          & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
           Rename-Item publish\Accentra.msix "Accentra-${{ github.ref_name }}.msix"
 
       - name: Create GitHub Release
