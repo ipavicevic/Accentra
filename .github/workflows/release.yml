@@ -69,7 +69,7 @@ jobs:
         run: |
           $cert = New-SelfSignedCertificate `
             -Type Custom `
-            -Subject "CN=Ivan Pavicevic" `
+            -Subject "CN=53BA64DB-AB37-4AC8-A5FD-E1A2E5D8149A" `
             -KeyUsage DigitalSignature `
             -FriendlyName "Accentra Test" `
             -CertStoreLocation "Cert:\CurrentUser\My" `

@@ -7,8 +7,8 @@
   IgnorableNamespaces="uap rescap desktop">
 
   <Identity
-    Name="IvanPavicevic.Accentra"
-    Publisher="CN=Ivan Pavicevic"
+    Name="ipavicevic.Accentra"
+    Publisher="CN=53BA64DB-AB37-4AC8-A5FD-E1A2E5D8149A"
     Version="0.0.0.0" />
 
   <Properties>
