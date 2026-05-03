@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Accentra;
 
 class TrayApp : ApplicationContext
@@ -23,6 +25,9 @@ class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(startWithWindowsItem);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("About Accentra...", null, (_, _) =>
+            Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/") { UseShellExecute = true }));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Uninstall...", null, (_, _) =>
         {
