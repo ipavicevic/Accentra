@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-echo Publishing Accentra (Release, win-x64, self-contained, single-file)...
+echo Publishing Accentra EXE (Release, win-x64, self-contained, single-file)...
+echo (For MSI, push a v* tag — GitHub Actions builds the MSI)
 echo.
 
 dotnet publish Accentra.csproj ^

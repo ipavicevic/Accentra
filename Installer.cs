@@ -6,91 +6,58 @@ namespace Accentra;
 static class Installer
 {
     private const string AppName = "Accentra";
-
-    private static readonly string InstallDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
-
-    public static readonly string InstallPath = Path.Combine(InstallDir, $"{AppName}.exe");
-
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Accentra";
 
-    public static bool IsInstalledLocation() =>
-        string.Equals(Environment.ProcessPath, InstallPath, StringComparison.OrdinalIgnoreCase);
-
-    public static void Install()
+    // Extract accent-maps.json from embedded resources the first time the app runs.
+    // Preserves any user edits on subsequent starts and after upgrades.
+    public static void EnsureAccentMapsJson()
     {
-        Logger.Log($"Installing from {Environment.ProcessPath}");
-        Directory.CreateDirectory(InstallDir);
-        File.Copy(Environment.ProcessPath!, InstallPath, overwrite: true);
-
-        // Extract embedded accent-maps.json on first install only — preserve user edits on upgrade.
-        var destJson = Path.Combine(InstallDir, "accent-maps.json");
-        if (!File.Exists(destJson))
+        var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? ".";
+        var dest = Path.Combine(exeDir, "accent-maps.json");
+        if (File.Exists(dest)) return;
+        try
         {
             using var stream = typeof(Installer).Assembly.GetManifestResourceStream("Accentra.accent-maps.json")!;
-            using var file = File.Create(destJson);
+            using var file = File.Create(dest);
             stream.CopyTo(file);
+            Logger.Log("Extracted accent-maps.json");
         }
-
-        using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!)
-            run.SetValue(AppName, $"\"{InstallPath}\"");
-
-        using (var uninstall = Registry.CurrentUser.CreateSubKey(UninstallKey))
+        catch (Exception ex)
         {
-            uninstall.SetValue("DisplayName", AppName);
-            uninstall.SetValue("UninstallString", $"\"{InstallPath}\" --uninstall");
-            uninstall.SetValue("DisplayIcon", InstallPath);
-            uninstall.SetValue("Publisher", AppName);
-            uninstall.SetValue("DisplayVersion", Application.ProductVersion);
-            uninstall.SetValue("NoModify", 1, RegistryValueKind.DWord);
-            uninstall.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+            Logger.Log($"Failed to extract accent-maps.json: {ex.Message}");
         }
-
-        AddToUserPath();
-
-        Logger.Log($"Install complete — launching {InstallPath}");
-        Process.Start(InstallPath, "--first-run");
     }
 
     public static void Uninstall()
     {
-        using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true))
-            run?.DeleteValue(AppName, throwOnMissingValue: false);
-
-        Registry.CurrentUser.DeleteSubKey(UninstallKey, throwOnMissingSubKey: false);
-
-        RemoveFromUserPath();
-
-        // Schedule folder deletion after process exits (cmd waits 2s then removes the directory)
-        Process.Start(new ProcessStartInfo("cmd.exe", $"/c timeout /t 2 /nobreak & rd /s /q \"{InstallDir}\"")
+        var productCode = FindMsiProductCode();
+        if (productCode is null)
         {
-            WindowStyle = ProcessWindowStyle.Hidden,
-            CreateNoWindow = true,
+            Logger.Log("MSI product code not found in registry");
+            MessageBox.Show(
+                "Could not find the uninstall entry. Please uninstall from Settings → Apps.",
+                "Uninstall Accentra", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        Logger.Log($"Invoking msiexec /x {productCode} /quiet");
+        Process.Start(new ProcessStartInfo("msiexec.exe", $"/x {productCode} /quiet")
+        {
+            UseShellExecute = true,
         });
     }
 
-    private static void AddToUserPath()
+    private static string? FindMsiProductCode()
     {
-        var current = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? "";
-        var parts = current.Split(';', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Any(p => string.Equals(p.TrimEnd('\\'), InstallDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+        using var root = Registry.CurrentUser.OpenSubKey(
+            @"Software\Microsoft\Windows\CurrentVersion\Uninstall");
+        if (root is null) return null;
+        foreach (var name in root.GetSubKeyNames())
         {
-            Logger.Log("InstallDir already in user PATH");
-            return;
+            using var sub = root.OpenSubKey(name);
+            if (sub?.GetValue("DisplayName") as string == AppName)
+                return name;
         }
-        var newPath = current.TrimEnd(';') + ";" + InstallDir;
-        Environment.SetEnvironmentVariable("Path", newPath, EnvironmentVariableTarget.User);
-        Logger.Log($"Added {InstallDir} to user PATH");
-    }
-
-    private static void RemoveFromUserPath()
-    {
-        var current = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? "";
-        var parts = current.Split(';', StringSplitOptions.RemoveEmptyEntries)
-                           .Where(p => !string.Equals(p.TrimEnd('\\'), InstallDir.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
-        Environment.SetEnvironmentVariable("Path", string.Join(';', parts), EnvironmentVariableTarget.User);
-        Logger.Log($"Removed {InstallDir} from user PATH");
+        return null;
     }
 
     public static bool IsAutoStartEnabled()
@@ -109,7 +76,7 @@ static class Installer
         else
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
-            key.SetValue(AppName, $"\"{InstallPath}\"");
+            key.SetValue(AppName, $"\"{Environment.ProcessPath}\"");
         }
     }
 }

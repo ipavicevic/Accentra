@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="Accentra"
+           Version="$(Version)"
+           Manufacturer="Ivan Pavicevic"
+           UpgradeCode="{6903BE47-5BFA-4C67-9F85-CF4E94ABFD91}"
+           InstallerVersion="500"
+           Compressed="yes"
+           InstallScope="perUser">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Accentra is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      Terminate a running Accentra instance before replacing the EXE.
+      The Run registry key will restart it on next login; the LaunchApp
+      custom action restarts it immediately after install completes.
+    -->
+    <util:CloseApplication Id="CloseAccentra" Target="Accentra.exe"
+                           TerminateProcess="yes" RebootPrompt="no" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="Accentra">
+
+        <Component Id="MainExe" Guid="{F9DC7202-3B4F-497B-AD04-D5ABFE7896AA}">
+          <File Id="MainExe" Source="$(SourceDir)Accentra.exe" KeyPath="yes" />
+        </Component>
+
+        <!-- Written by HKCU Run key; also toggled via the tray menu -->
+        <Component Id="AutoStart" Guid="{9F8C29AD-5D3A-4EC9-AEE8-BB77D3F924F4}">
+          <RegistryValue Root="HKCU"
+                         Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                         Name="Accentra"
+                         Value='"[INSTALLFOLDER]Accentra.exe"'
+                         Type="string" KeyPath="yes" />
+        </Component>
+
+        <Component Id="PathEntry" Guid="{6EBE1650-622F-4BE6-83FF-13CFB35F32F6}">
+          <Environment Id="PATH" Name="PATH" Value="[INSTALLFOLDER]"
+                       Part="last" Action="set" System="no" />
+          <!-- Registry KeyPath required when a component contains only an Environment element -->
+          <RegistryValue Root="HKCU" Key="Software\Accentra" Name="PathRegistered"
+                         Value="1" Type="integer" KeyPath="yes" />
+        </Component>
+
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Level="1">
+      <ComponentRef Id="MainExe" />
+      <ComponentRef Id="AutoStart" />
+      <ComponentRef Id="PathEntry" />
+    </Feature>
+
+    <!-- Launch Accentra after install and after upgrade (NOT during uninstall) -->
+    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]Accentra.exe" />
+    <CustomAction Id="LaunchApp" BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixShellExec" Execute="immediate" Return="check" />
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchApp" After="InstallFinalize">NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

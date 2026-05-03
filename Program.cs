@@ -12,20 +12,6 @@ static class Program
                             .IsInRole(WindowsBuiltInRole.Administrator);
         Logger.Log($"Startup args=[{string.Join(", ", args)}] elevated={elevated} path={Environment.ProcessPath}");
 
-        if (args.Contains("--uninstall"))
-        {
-            Logger.Log("Uninstall requested");
-            Installer.Uninstall();
-            return;
-        }
-
-        if (!Installer.IsInstalledLocation())
-        {
-            Logger.Log("Not installed location — running installer");
-            Installer.Install();
-            return;
-        }
-
         // Kill any existing instance so a new one (e.g. elevated) can take over.
         var others = Process.GetProcessesByName("Accentra")
                             .Where(p => p.Id != Environment.ProcessId)
@@ -47,7 +33,7 @@ static class Program
                     Logger.Log($"  pid={p.Id} kill failed: {ex.GetType().Name}: {ex.Message}");
                 }
             }
-            Thread.Sleep(500); // let the old tray icon vanish before we add ours
+            Thread.Sleep(500);
             Logger.Log("Takeover complete");
         }
         else
@@ -61,6 +47,8 @@ static class Program
             Logger.Log("Another instance is already running after kill attempt — exiting");
             return;
         }
+
+        Installer.EnsureAccentMapsJson();
 
         Logger.Log("Starting tray app");
         Application.EnableVisualStyles();

@@ -26,7 +26,7 @@ jobs:
           $v = '${{ github.ref_name }}'.TrimStart('v')
           echo "value=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Publish
+      - name: Publish EXE
         shell: pwsh
         run: |
           dotnet publish Accentra.csproj `
@@ -38,9 +38,23 @@ jobs:
             -p:Version=${{ steps.version.outputs.value }} `
             -o publish
 
+      - name: Install WiX
+        run: |
+          dotnet tool install --global wix
+          wix extension add --global WixToolset.Util.wixext
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          wix build Accentra.wxs `
+            -arch x64 `
+            -d Version=${{ steps.version.outputs.value }} `
+            -d SourceDir=publish\ `
+            -o publish\Accentra.msi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Accentra ${{ github.ref_name }}
-          body: "Download `Accentra.exe` and run it once — it installs itself and starts with Windows."
-          files: publish/Accentra.exe
+          body: "Download `Accentra.msi` and run it — installs itself and starts with Windows."
+          files: publish/Accentra.msi
