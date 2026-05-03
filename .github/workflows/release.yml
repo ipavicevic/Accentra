@@ -26,7 +26,7 @@ jobs:
           $v = '${{ github.ref_name }}'.TrimStart('v')
           echo "value=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Publish
+      - name: Publish EXE
         shell: pwsh
         run: |
           dotnet publish Accentra.csproj `
@@ -38,9 +38,51 @@ jobs:
             -p:Version=${{ steps.version.outputs.value }} `
             -o publish
 
+      - name: Generate store assets
+        shell: pwsh
+        run: .\generate-store-assets.ps1
+
+      - name: Prepare MSIX layout
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force msix-layout | Out-Null
+          Copy-Item publish\Accentra.exe msix-layout\
+          (Get-Content Package.appxmanifest) `
+            -replace 'Version="0\.0\.0\.0"', 'Version="${{ steps.version.outputs.value }}.0"' |
+            Set-Content msix-layout\Package.appxmanifest
+          Copy-Item -Recurse Assets msix-layout\
+
+      - name: Build MSIX
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
+          & "$($sdk.FullName)\x64\makeappx.exe" pack /d msix-layout /p publish\Accentra.msix /o
+
+      - name: Sign MSIX (test certificate)
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -Subject "CN=Ivan Pavicevic" `
+            -KeyUsage DigitalSignature `
+            -FriendlyName "Accentra Test" `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          $pwd = ConvertTo-SecureString "test" -AsPlainText -Force
+          Export-PfxCertificate -Cert $cert -FilePath accentra-test.pfx -Password $pwd | Out-Null
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
+          & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra-test.pfx /p test publish\Accentra.msix
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Accentra ${{ github.ref_name }}
-          body: "Download `Accentra.exe` and run it once — it installs itself and starts with Windows."
-          files: publish/Accentra.exe
+          body: |
+            **Test build — signed with a self-signed certificate.**
+
+            To install:
+            1. Enable Developer Mode: Windows Settings → System → For developers
+            2. Double-click `Accentra.msix`
+          files: publish/Accentra.msix

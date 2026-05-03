@@ -12,20 +12,6 @@ static class Program
                             .IsInRole(WindowsBuiltInRole.Administrator);
         Logger.Log($"Startup args=[{string.Join(", ", args)}] elevated={elevated} path={Environment.ProcessPath}");
 
-        if (args.Contains("--uninstall"))
-        {
-            Logger.Log("Uninstall requested");
-            Installer.Uninstall();
-            return;
-        }
-
-        if (!Installer.IsInstalledLocation())
-        {
-            Logger.Log("Not installed location — running installer");
-            Installer.Install();
-            return;
-        }
-
         // Kill any existing instance so a new one (e.g. elevated) can take over.
         var others = Process.GetProcessesByName("Accentra")
                             .Where(p => p.Id != Environment.ProcessId)
@@ -62,9 +48,11 @@ static class Program
             return;
         }
 
+        bool firstRun = Installer.EnsureAccentMapsJson();
+
         Logger.Log("Starting tray app");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new TrayApp(firstRun: args.Contains("--first-run")));
+        Application.Run(new TrayApp(firstRun: firstRun));
     }
 }

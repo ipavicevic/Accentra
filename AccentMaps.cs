@@ -10,13 +10,22 @@ static class AccentMaps
 
     private static Dictionary<char, char[]> LoadMaps()
     {
-        var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? ".";
-        var jsonPath = Path.Combine(exeDir, "accent-maps.json");
-
-        if (File.Exists(jsonPath))
+        // LocalApplicationData is writable in both MSIX and plain EXE installs.
+        var dataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Accentra", "accent-maps.json");
+        if (File.Exists(dataPath))
         {
-            try { return Parse(File.ReadAllText(jsonPath)); }
-            catch { /* malformed user JSON — fall through to embedded defaults */ }
+            try { return Parse(File.ReadAllText(dataPath)); }
+            catch { }
+        }
+
+        // Fallback: EXE directory (plain EXE dev/testing without prior install).
+        var exePath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath) ?? ".", "accent-maps.json");
+        if (File.Exists(exePath))
+        {
+            try { return Parse(File.ReadAllText(exePath)); }
+            catch { }
         }
 
         return Parse(ReadEmbedded());

@@ -29,19 +29,6 @@ class TrayApp : ApplicationContext
         menu.Items.Add("About Accentra...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/") { UseShellExecute = true }));
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Uninstall...", null, (_, _) =>
-        {
-            var result = MessageBox.Show(
-                "Uninstall Accentra? This removes the app and its files from your computer.",
-                "Uninstall Accentra",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-            if (result == DialogResult.Yes)
-            {
-                Installer.Uninstall();
-                ExitThread();
-            }
-        });
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
 
         _trayIcon = new NotifyIcon
