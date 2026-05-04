@@ -1,0 +1,79 @@
+name: MSIX
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.x'
+
+      - name: Extract version
+        id: version
+        shell: pwsh
+        run: |
+          $v = (Select-Xml -Path Accentra.csproj -XPath '//Version').Node.InnerText
+          echo "value=$v" >> $env:GITHUB_OUTPUT
+          $parts = $v -split '\.'
+          while ($parts.Count -lt 4) { $parts += '0' }
+          echo "msix=$($parts[0..3] -join '.')" >> $env:GITHUB_OUTPUT
+
+      - name: Publish EXE
+        shell: pwsh
+        run: |
+          dotnet publish Accentra.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version=${{ steps.version.outputs.value }} `
+            -o publish
+
+      - name: Generate store assets
+        shell: pwsh
+        run: .\generate-store-assets.ps1
+
+      - name: Prepare MSIX layout
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force msix-layout | Out-Null
+          Copy-Item publish\Accentra.exe msix-layout\
+          (Get-Content Package.appxmanifest) `
+            -replace 'Version="0\.0\.0\.0"', 'Version="${{ steps.version.outputs.msix }}"' |
+            Set-Content msix-layout\AppxManifest.xml
+          Copy-Item -Recurse Assets msix-layout\
+
+      - name: Build MSIX
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
+          & "$($sdk.FullName)\x64\makeappx.exe" pack /d msix-layout /p publish\Accentra.msix /o
+
+      - name: Sign MSIX
+        shell: pwsh
+        run: |
+          $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERT }}")
+          [IO.File]::WriteAllBytes("accentra.pfx", $pfxBytes)
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
+          & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Accentra-${{ steps.version.outputs.value }}-${{ github.ref_name }}
+          path: publish/Accentra.msix
+          retention-days: 90
