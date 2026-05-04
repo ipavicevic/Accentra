@@ -19,6 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **.NET 8 + WinForms** — WinForms is used only for the system tray icon (`NotifyIcon`) and message loop; there is no application window
 - **Win32 API via P/Invoke** for the global keyboard hook and character injection
+- **WinRT APIs** (`Windows.ApplicationModel`, `Windows.Storage`) for MSIX startup task and data folder access
 
 ## Architecture
 
@@ -43,7 +44,7 @@ Uses `SendInput` to inject Unicode characters. To replace the current character:
 
 ### Accent Maps
 
-Each base character (e, a, o, u, n, c, etc.) maps to an ordered `char[]` of variants. Cycling wraps back to the plain character at the end of the list.
+Each base character (e, a, o, u, n, c, etc.) maps to an ordered `char[]` of variants. Cycling wraps back to the plain character at the end of the list. The maps are loaded from `accent-maps.json` in the app's data folder (`Installer.AccentMapsDir`), falling back to the embedded default if the file is absent or malformed.
 
 ## Key Win32 APIs
 
@@ -53,38 +54,56 @@ Each base character (e, a, o, u, n, c, etc.) maps to an ordered `char[]` of vari
 
 ## Deployment & Lifecycle
 
-No installer. The EXE is self-installing on first run.
+Distributed via the **Windows Store** as an MSIX package. The `Package.appxmanifest` declares:
+- `runFullTrust` capability — required for `WH_KEYBOARD_LL`
+- `windows.startupTask` — starts Accentra automatically on login
+- `windows.appExecutionAlias` — makes `Accentra.exe` runnable from the command line (including elevated prompts)
 
-### First Run (from Downloads or wherever)
+### Data folder
 
-1. Detects it is not running from `%LOCALAPPDATA%\Accentra\`
-2. Copies itself to `%LOCALAPPDATA%\Accentra\Accentra.exe`
-3. Registers in `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Accentra` → appears in Settings → Apps → Installed apps
-4. Adds itself to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → starts with Windows on every login
-5. Launches the new copy and exits
+`Installer.AccentMapsDir` returns the correct writable data folder in both contexts:
+- **MSIX**: `Windows.Storage.ApplicationData.Current.LocalFolder.Path` (package-private, virtualized)
+- **Unpackaged (dev)**: `%LOCALAPPDATA%\Accentra\`
 
-### Normal Run (auto-started by Windows on login)
-
-Already installed — hook registers, app sits in system tray, does its job.
+`EnsureAccentMapsJson()` extracts the embedded `accent-maps.json` to this folder on first run only, preserving any user edits across upgrades.
 
 ### Tray Menu
 
 ```
 Start with Windows  ✓
 ─────────────────────
+Edit accent maps...
+About Accentra...
+─────────────────────
 Exit
 ```
 
-### Uninstall (user clicks Uninstall in Settings → Apps)
+### Startup task toggle
 
-Windows calls `Accentra.exe --uninstall`, which:
+Uses `Windows.ApplicationModel.StartupTask` API when running as MSIX, falls back to the `HKCU\...\Run` registry key when running unpackaged (dev/testing).
 
-1. Removes the `Run` key → no longer starts with Windows
-2. Removes the `Uninstall` registry entry → disappears from Installed apps
-3. Deletes `%LOCALAPPDATA%\Accentra\` folder including the EXE (self-delete via `cmd /c` scheduled deletion)
+## Limitations
 
-No admin rights required at any point — all registry keys are HKCU (user-level).
+- The hook does not intercept keystrokes in windows running at a higher privilege level (UAC elevated processes). Workaround: run `Accentra.exe` from an elevated command prompt — the app execution alias makes this possible without knowing the install path.
+- Does not work with the Windows touch/soft keyboard — touch input bypasses `WH_KEYBOARD_LL` entirely.
 
-## Limitation
+## Versioning Policy
 
-The hook does not intercept keystrokes in windows running at a higher privilege level (UAC elevated processes). Chat apps (Discord, Messenger) and browsers always run at normal user level, so this is not a practical issue.
+Versions follow `Major.Minor.Revision`:
+
+| Part | When to bump | Examples |
+|------|-------------|---------|
+| **Major** | Breaking change to user-facing behavior or config format | `accent-maps.json` schema change, fundamental UX change, dropping a Windows version |
+| **Minor** | New user-visible functionality | New tray menu item, new accent keys, new distribution channel |
+| **Revision** | Bug fixes and internal changes with no new features | Workflow fixes, manifest corrections, path bug fixes |
+
+When the minor version bumps, reset revision to 0. When the major version bumps, reset both minor and revision to 0.
+
+## Release Process
+
+1. Work on a feature branch
+2. Open a PR to `main` — CI build must pass
+3. Test the built MSIX (see `TESTING.md`) before merging
+4. Merge PR → bump version in `Accentra.csproj` following the versioning policy above
+5. Tag `vX.Y.Z` → CI builds and publishes the GitHub Release
+6. Upload the MSIX to Partner Center for Store submission
