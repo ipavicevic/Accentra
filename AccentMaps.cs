@@ -10,10 +10,7 @@ static class AccentMaps
 
     private static Dictionary<char, char[]> LoadMaps()
     {
-        // LocalApplicationData is writable in both MSIX and plain EXE installs.
-        var dataPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Accentra", "accent-maps.json");
+        var dataPath = Path.Combine(Installer.AccentMapsDir, "accent-maps.json");
         if (File.Exists(dataPath))
         {
             try { return Parse(File.ReadAllText(dataPath)); }

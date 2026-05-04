@@ -16,8 +16,15 @@ static class Installer
         catch { return false; }
     }
 
-    public static readonly string AccentMapsDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+    public static readonly string AccentMapsDir = GetAccentMapsDir();
+
+    private static string GetAccentMapsDir()
+    {
+        if (IsPackaged)
+            return Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+    }
 
     public static bool EnsureAccentMapsJson()
     {
