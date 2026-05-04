@@ -28,6 +28,8 @@ jobs:
           $parts = $v -split '\.'
           while ($parts.Count -lt 4) { $parts += '0' }
           echo "msix=$($parts[0..3] -join '.')" >> $env:GITHUB_OUTPUT
+          $branch = '${{ github.ref_name }}' -replace '/', '-'
+          echo "branch=$branch" >> $env:GITHUB_OUTPUT
 
       - name: Publish EXE
         shell: pwsh
@@ -74,6 +76,6 @@ jobs:
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Accentra-${{ steps.version.outputs.value }}-${{ github.ref_name }}
+          name: Accentra-${{ steps.version.outputs.value }}-${{ steps.version.outputs.branch }}
           path: publish/Accentra.msix
           retention-days: 90
