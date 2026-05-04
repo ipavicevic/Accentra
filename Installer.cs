@@ -16,10 +16,12 @@ static class Installer
         catch { return false; }
     }
 
+    public static readonly string AccentMapsDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+
     public static bool EnsureAccentMapsJson()
     {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+        var dir = AccentMapsDir;
         Directory.CreateDirectory(dir);
         var dest = Path.Combine(dir, "accent-maps.json");
         if (File.Exists(dest)) return false;

@@ -26,6 +26,8 @@ class TrayApp : ApplicationContext
         var menu = new ContextMenuStrip();
         menu.Items.Add(startWithWindowsItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Edit accent maps...", null, (_, _) =>
+            Process.Start(new ProcessStartInfo("explorer.exe", Installer.AccentMapsDir) { UseShellExecute = true }));
         menu.Items.Add("About Accentra...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/") { UseShellExecute = true }));
         menu.Items.Add(new ToolStripSeparator());
