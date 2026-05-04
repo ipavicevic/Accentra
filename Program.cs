@@ -49,10 +49,11 @@ static class Program
         }
 
         bool firstRun = Installer.EnsureAccentMapsJson();
+        bool elevatedTakeover = elevated && others.Length > 0;
 
         Logger.Log("Starting tray app");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new TrayApp(firstRun: firstRun));
+        Application.Run(new TrayApp(firstRun: firstRun, elevatedTakeover: elevatedTakeover));
     }
 }

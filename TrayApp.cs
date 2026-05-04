@@ -8,7 +8,7 @@ class TrayApp : ApplicationContext
     private readonly KeyboardHook _hook;
     private readonly AccentEngine _engine;
 
-    public TrayApp(bool firstRun = false)
+    public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
     {
         _engine = new AccentEngine();
         _hook = new KeyboardHook(_engine);
@@ -43,6 +43,8 @@ class TrayApp : ApplicationContext
 
         if (firstRun)
             ShowWelcomeOnceLoopIsRunning();
+        else if (elevatedTakeover)
+            ShowElevatedTakeoverOnceLoopIsRunning();
     }
 
     private static void ShowWelcomeOnceLoopIsRunning()
@@ -59,6 +61,18 @@ class TrayApp : ApplicationContext
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+        };
+        timer.Start();
+    }
+
+    private void ShowElevatedTakeoverOnceLoopIsRunning()
+    {
+        var timer = new System.Windows.Forms.Timer { Interval = 200 };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            timer.Dispose();
+            _trayIcon.ShowBalloonTip(4000, "Accentra", "Now running elevated — accent mode works in admin apps.", ToolTipIcon.Info);
         };
         timer.Start();
     }
