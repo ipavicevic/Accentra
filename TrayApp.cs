@@ -45,6 +45,8 @@ class TrayApp : ApplicationContext
             ShowWelcomeOnceLoopIsRunning();
         else if (elevatedTakeover)
             ShowElevatedTakeoverOnceLoopIsRunning();
+
+        WireAccentMapsOnceLoopIsRunning();
     }
 
     private static void ShowWelcomeOnceLoopIsRunning()
@@ -61,6 +63,31 @@ class TrayApp : ApplicationContext
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+        };
+        timer.Start();
+    }
+
+    private void WireAccentMapsOnceLoopIsRunning()
+    {
+        var timer = new System.Windows.Forms.Timer { Interval = 200 };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            timer.Dispose();
+
+            if (AccentMaps.LoadError is { } startupErr)
+                _trayIcon.ShowBalloonTip(8000, "Accentra — accent-maps.json error",
+                    $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.", ToolTipIcon.Warning);
+
+            var syncCtx = SynchronizationContext.Current!;
+            AccentMaps.Reloaded += error => syncCtx.Post(_ =>
+            {
+                if (error is null)
+                    _trayIcon.ShowBalloonTip(3000, "Accentra", "Accent maps reloaded.", ToolTipIcon.Info);
+                else
+                    _trayIcon.ShowBalloonTip(8000, "Accentra — accent-maps.json error",
+                        $"Could not reload: {error}\n\nKeeping previous maps.", ToolTipIcon.Warning);
+            }, null);
         };
         timer.Start();
     }
