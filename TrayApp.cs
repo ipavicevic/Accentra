@@ -45,6 +45,8 @@ class TrayApp : ApplicationContext
             ShowWelcomeOnceLoopIsRunning();
         else if (elevatedTakeover)
             ShowElevatedTakeoverOnceLoopIsRunning();
+        else
+            ShowRunningOnceLoopIsRunning();
 
         WireAccentMapsOnceLoopIsRunning();
     }
@@ -88,6 +90,18 @@ class TrayApp : ApplicationContext
                     _trayIcon.ShowBalloonTip(8000, "Accentra — accent-maps.json error",
                         $"Could not reload: {error}\n\nKeeping previous maps.", ToolTipIcon.Warning);
             }, null);
+        };
+        timer.Start();
+    }
+
+    private void ShowRunningOnceLoopIsRunning()
+    {
+        var timer = new System.Windows.Forms.Timer { Interval = 200 };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            timer.Dispose();
+            _trayIcon.ShowBalloonTip(3000, "Accentra", $"Accentra {Application.ProductVersion} is running.", ToolTipIcon.Info);
         };
         timer.Start();
     }
