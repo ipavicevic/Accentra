@@ -101,9 +101,10 @@ When the minor version bumps, reset revision to 0. When the major version bumps,
 
 ## Release Process
 
-1. Work on a feature branch
+1. Work on a feature branch — bump version in `Accentra.csproj` as part of the PR
 2. Open a PR to `main` — CI build must pass
-3. Test the built MSIX (see `TESTING.md`) before merging
-4. Merge PR → bump version in `Accentra.csproj` following the versioning policy above
-5. Tag `vX.Y.Z` → CI builds and publishes the GitHub Release
-6. Upload the MSIX to Partner Center for Store submission
+3. Test the MSIX artifact produced by the feature branch workflow before merging
+4. Merge PR → CI automatically builds, signs, and publishes the GitHub Release
+5. Upload the MSIX to Partner Center for Store submission
+
+If the version was not bumped, the release step skips silently (tag already exists).

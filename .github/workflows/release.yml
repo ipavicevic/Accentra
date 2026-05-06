@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ main ]
 
 jobs:
   release:
@@ -23,15 +22,27 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $v = '${{ github.ref_name }}'.TrimStart('v')
+          $v = (Select-Xml -Path Accentra.csproj -XPath '//Version').Node.InnerText
           echo "value=$v" >> $env:GITHUB_OUTPUT
-          # MSIX requires 4 purely numeric components — strip any pre-release suffix
-          $numeric = ($v -split '-')[0]
-          $parts = $numeric -split '\.'
+          $parts = ($v -split '-')[0] -split '\.'
           while ($parts.Count -lt 4) { $parts += '0' }
           echo "msix=$($parts[0..3] -join '.')" >> $env:GITHUB_OUTPUT
+          echo "tag=v$v" >> $env:GITHUB_OUTPUT
+
+      - name: Skip if already released
+        id: check
+        shell: pwsh
+        run: |
+          $exists = git tag -l "${{ steps.version.outputs.tag }}"
+          if ($exists) {
+            echo "Tag ${{ steps.version.outputs.tag }} already exists — skipping release."
+            echo "skip=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "skip=false" >> $env:GITHUB_OUTPUT
+          }
 
       - name: Publish EXE
+        if: steps.check.outputs.skip == 'false'
         shell: pwsh
         run: |
           dotnet publish Accentra.csproj `
@@ -44,10 +55,12 @@ jobs:
             -o publish
 
       - name: Generate store assets
+        if: steps.check.outputs.skip == 'false'
         shell: pwsh
         run: .\generate-store-assets.ps1
 
       - name: Prepare MSIX layout
+        if: steps.check.outputs.skip == 'false'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force msix-layout | Out-Null
@@ -58,6 +71,7 @@ jobs:
           Copy-Item -Recurse Assets msix-layout\
 
       - name: Build MSIX
+        if: steps.check.outputs.skip == 'false'
         shell: pwsh
         run: |
           $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
@@ -65,6 +79,7 @@ jobs:
           & "$($sdk.FullName)\x64\makeappx.exe" pack /d msix-layout /p publish\Accentra.msix /o
 
       - name: Sign MSIX
+        if: steps.check.outputs.skip == 'false'
         shell: pwsh
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERT }}")
@@ -72,12 +87,14 @@ jobs:
           $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
                  Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
           & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
-          Copy-Item publish\Accentra.msix "publish\Accentra-${{ github.ref_name }}.msix"
+          Copy-Item publish\Accentra.msix "publish\Accentra-${{ steps.version.outputs.tag }}.msix"
 
       - name: Create GitHub Release
+        if: steps.check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v3
         with:
-          name: Accentra ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Accentra ${{ steps.version.outputs.tag }}
           body: |
             **Test build — signed with a self-signed certificate.**
 
@@ -86,4 +103,4 @@ jobs:
             2. Double-click `Accentra.msix`
           files: |
             publish/Accentra.msix
-            publish/Accentra-${{ github.ref_name }}.msix
+            publish/Accentra-${{ steps.version.outputs.tag }}.msix
