@@ -72,7 +72,7 @@ jobs:
           $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
                  Where-Object { $_.Name -match '^\d' } | Sort-Object Name | Select-Object -Last 1
           & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
-          Rename-Item publish\Accentra.msix "Accentra-${{ github.ref_name }}.msix"
+          Copy-Item publish\Accentra.msix "publish\Accentra-${{ github.ref_name }}.msix"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -84,4 +84,6 @@ jobs:
             To install:
             1. Enable Developer Mode: Windows Settings → System → For developers
             2. Double-click `Accentra.msix`
-          files: publish/Accentra-${{ github.ref_name }}.msix
+          files: |
+            publish/Accentra.msix
+            publish/Accentra-${{ github.ref_name }}.msix
