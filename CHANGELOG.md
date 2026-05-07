@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [1.3.0] - 2026-05-07
+
+### Changed
+- App icon updated: rounded square shape (matching Microsoft Store style), blue background, and a new `ā` glyph replacing `ã`.
+- Landing page hero icon updated to match.
+
 ## [1.2.3] - 2026-05-06
 
 ### Changed
