@@ -61,7 +61,7 @@ class TrayApp : ApplicationContext
             timer.Dispose();
             MessageBox.Show(
                 $"Accentra {Application.ProductVersion} is now running in your system tray.\n\n" +
-                "Right-click the 'ã' icon in the tray for options. Accentra will start automatically with Windows.",
+                "Right-click the 'ā' icon in the tray for options. Accentra will start automatically with Windows.",
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
