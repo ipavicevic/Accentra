@@ -23,8 +23,19 @@ class TrayApp : ApplicationContext
             startWithWindowsItem.Checked = Installer.IsAutoStartEnabled();
         };
 
+        var pauseItem = new ToolStripMenuItem("Pause accent input")
+        {
+            Checked = false
+        };
+        pauseItem.Click += (_, _) =>
+        {
+            _engine.Enabled = !_engine.Enabled;
+            pauseItem.Checked = !_engine.Enabled;
+        };
+
         var menu = new ContextMenuStrip();
         menu.Items.Add(startWithWindowsItem);
+        menu.Items.Add(pauseItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Edit accent maps...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("explorer.exe", Installer.AccentMapsDir) { UseShellExecute = true }));
