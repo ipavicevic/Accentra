@@ -46,8 +46,8 @@ class AccentEngine
                 }
                 else
                 {
-                    if (isDown && vkCode == _lastDownVk && !IsModifierKey(vkCode))
-                        return true; // suppress auto-repeat for all non-modifier keys
+                    if (isDown && vkCode == _lastDownVk && IsPrintableKey(vkCode))
+                        return true; // suppress auto-repeat for printable keys
                     _lastDownVk = vkCode;
                 }
                 return false;
@@ -124,6 +124,14 @@ class AccentEngine
 
     private static bool IsShiftHeld() =>
         (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+
+    private static bool IsPrintableKey(uint vk) =>
+        (vk >= 0x30 && vk <= 0x39) ||  // 0-9
+        (vk >= 0x41 && vk <= 0x5A) ||  // A-Z
+        (vk >= 0x60 && vk <= 0x6F) ||  // numpad 0-9 and operators
+        (vk >= 0xBA && vk <= 0xC0) ||  // OEM ;=,-./`
+        (vk >= 0xDB && vk <= 0xDF) ||  // OEM [\]'
+        vk == 0xE2;                     // OEM 102
 
     private static bool IsModifierKey(uint vk) => (int)vk is
         NativeMethods.VK_SHIFT or NativeMethods.VK_CONTROL or NativeMethods.VK_MENU or
