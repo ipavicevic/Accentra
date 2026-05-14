@@ -2,6 +2,20 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [1.5.0] - 2026-05-13
+
+### Added
+- Math and symbol mappings for digit and punctuation keys. Hold a key to cycle through variants:
+  - `0` → `°` `⁰` `₀` (degree, superscript, subscript)
+  - `1`–`9` → superscript then subscript variants (e.g. `¹` `₁`)
+  - `-` → `–` `—` (en-dash, em-dash)
+  - `*` → `×`
+  - `/` → `÷`
+  - `=` → `≠` `≈` `≤` `≥`
+  - `?` → `¿`
+  - `!` → `¡`
+- Auto-repeat is now suppressed for all keys while Accentra is active (use **Pause accent input** from the tray menu when auto-repeat is needed).
+
 ## [1.4.0] - 2026-05-12
 
 ### Added

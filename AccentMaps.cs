@@ -114,6 +114,16 @@ static class AccentMaps
             .ToDictionary(kv => kv.Key[0], kv => kv.Value.ToCharArray());
     }
 
+    private static char ShiftedChar(uint vkCode, char unshifted)
+    {
+        var keyState = new byte[256];
+        keyState[NativeMethods.VK_SHIFT] = 0x80;
+        var buf = new char[2];
+        uint scan = NativeMethods.MapVirtualKey(vkCode, NativeMethods.MAPVK_VK_TO_VSC);
+        int result = NativeMethods.ToUnicode(vkCode, scan, keyState, buf, buf.Length, 0);
+        return result == 1 ? buf[0] : unshifted;
+    }
+
     private static string ReadEmbedded()
     {
         using var stream = typeof(AccentMaps).Assembly.GetManifestResourceStream(ResourceName)!;
@@ -121,16 +131,31 @@ static class AccentMaps
         return reader.ReadToEnd();
     }
 
-    // vkCode is always in the A-Z range (0x41-0x5A); shift determines case.
     public static char[]? GetVariants(uint vkCode, bool shifted)
     {
-        if (vkCode < 0x41 || vkCode > 0x5A)
+        // For letter keys derive the base char from the VK code directly.
+        // For everything else use MapVirtualKey to get the unshifted character.
+        char baseChar;
+        if (vkCode is >= 0x41 and <= 0x5A)
+        {
+            baseChar = (char)(vkCode + 0x20); // always lowercase; shifted variants uppercased below
+        }
+        else
+        {
+            uint ch = NativeMethods.MapVirtualKey(vkCode, NativeMethods.MAPVK_VK_TO_CHAR);
+            if (ch == 0) return null;
+            // For non-letter keys, use the actual character produced (shift-aware).
+            // MapVirtualKey returns the unshifted char; check shifted state via GetKeyState.
+            char unshifted = (char)ch;
+            baseChar = shifted ? ShiftedChar(vkCode, unshifted) : unshifted;
+        }
+
+        if (!_maps.TryGetValue(baseChar, out var variants))
             return null;
 
-        char lower = (char)(vkCode + 0x20);
-        if (!_maps.TryGetValue(lower, out var variants))
-            return null;
-
-        return shifted ? Array.ConvertAll(variants, char.ToUpper) : variants;
+        // For letters, uppercase the variants when shifted. For other keys, variants are literal.
+        return (shifted && vkCode is >= 0x41 and <= 0x5A)
+            ? Array.ConvertAll(variants, char.ToUpper)
+            : variants;
     }
 }

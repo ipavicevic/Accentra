@@ -22,6 +22,15 @@ static class NativeMethods
     [DllImport("user32.dll")]
     public static extern short GetKeyState(int nVirtKey);
 
+    [DllImport("user32.dll")]
+    public static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+    [DllImport("user32.dll")]
+    public static extern int ToUnicode(uint wVirtKey, uint wScanCode, byte[]? lpKeyState, char[] pwszBuff, int cchBuff, uint wFlags);
+
+    public const uint MAPVK_VK_TO_CHAR = 2;
+    public const uint MAPVK_VK_TO_VSC = 0;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct KBDLLHOOKSTRUCT
     {

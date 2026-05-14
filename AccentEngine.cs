@@ -46,8 +46,8 @@ class AccentEngine
                 }
                 else
                 {
-                    if (isDown && vkCode == _lastDownVk && IsLetterKey(vkCode))
-                        return true; // suppress auto-repeat for unmapped letter keys
+                    if (isDown && vkCode == _lastDownVk && !IsModifierKey(vkCode))
+                        return true; // suppress auto-repeat for all non-modifier keys
                     _lastDownVk = vkCode;
                 }
                 return false;
@@ -124,8 +124,6 @@ class AccentEngine
 
     private static bool IsShiftHeld() =>
         (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
-
-    private static bool IsLetterKey(uint vk) => vk is (>= 0x41 and <= 0x5A) or (>= 0x30 and <= 0x39); // VK_A–VK_Z, VK_0–VK_9
 
     private static bool IsModifierKey(uint vk) => (int)vk is
         NativeMethods.VK_SHIFT or NativeMethods.VK_CONTROL or NativeMethods.VK_MENU or
