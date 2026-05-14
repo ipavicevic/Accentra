@@ -242,6 +242,17 @@
   <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
 </header>
 
+<!-- What's new -->
+<section class="section">
+  <h2>What's new in 1.3.0</h2>
+  <ul style="margin: 0 0 0 20px; color: var(--muted);">
+    <li>New app icon: rounded square shape, blue background, and the <strong>ā</strong> glyph — consistent across the system tray and the Microsoft Store.</li>
+  </ul>
+  <p style="margin-top: 14px; font-size: 0.88rem;">
+    <a href="https://github.com/ipavicevic/Accentra/blob/main/CHANGELOG.md">Full changelog on GitHub</a>
+  </p>
+</section>
+
 <!-- How it works -->
 <section class="section">
   <h2>How it works</h2>
@@ -316,9 +327,11 @@
 <!-- Tray menu -->
 <section class="section">
   <h2>Tray menu</h2>
-  <p>Right-click the <strong>ã</strong> icon in the system tray for options:</p>
+  <p>Right-click the <strong>ā</strong> icon in the system tray for options:</p>
   <ul style="margin: 14px 0 0 20px; color: var(--muted);">
     <li style="margin-bottom: 8px;"><strong>Start with Windows</strong> — toggle whether Accentra launches automatically on login (enabled by default after install).</li>
+    <li style="margin-bottom: 8px;"><strong>Edit accent maps...</strong> — opens the accent maps folder in Explorer so you can customize which accented characters are available for each key.</li>
+    <li style="margin-bottom: 8px;"><strong>About Accentra...</strong> — opens this web page.</li>
     <li><strong>Exit</strong> — stop Accentra until the next login (or until you run it again).</li>
   </ul>
 </section>
@@ -336,6 +349,7 @@
   <ul class="req-list">
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Touch / soft keyboard:</strong> Accentra intercepts physical keyboard input only. The Windows on-screen keyboard and touch input use a different path that bypasses the hook entirely.</li>
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Elevated apps:</strong> Accentra does not intercept keystrokes in apps running as Administrator. See <a href="#running-as-admin">Running as Admin</a> for a workaround.</li>
+    <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Key auto-repeat:</strong> While Accentra is running, holding a key enters accent mode instead of producing repeated characters. Auto-repeat is not available for keys that have accent variants defined.</li>
   </ul>
 </section>
 
@@ -367,14 +381,13 @@
     </tbody>
   </table>
 
-  <p style="margin-top: 16px;">Accentra reads <code>accent-maps.json</code> from its install folder. You can edit that file to add, remove, or reorder variants for any key.</p>
+  <p style="margin-top: 16px;">These are the defaults. Right-click the tray icon and choose <strong>Edit accent maps...</strong> to customize variants for any key.</p>
 </section>
 
 <!-- Customization -->
 <section class="section">
   <h2>Customizing accent maps</h2>
-  <p>Accentra's accent sequences are fully configurable. The file <code>accent-maps.json</code> in <code>%LOCALAPPDATA%\Accentra\</code> controls which variants appear for each key and in what order.</p>
-  <p>Open it with Notepad or any text editor. The format is straightforward — each entry maps a base letter to a string of variants:</p>
+  <p>Accentra's accent sequences are fully configurable. To open the accent maps folder, right-click the <strong>ā</strong> tray icon and choose <strong>Edit accent maps...</strong>. Open <code>accent-maps.json</code> with Notepad or any text editor — each entry maps a base letter to a string of variants:</p>
   <div class="demo-box" style="font-size: 0.9rem; line-height: 1.8;">
     {<br>
     &nbsp;&nbsp;"e": "éèêëěe",<br>
@@ -382,7 +395,7 @@
     &nbsp;&nbsp;"s": "šśşs"<br>
     }
   </div>
-  <p>Each character in the string becomes one step in the cycle. The last character is typically the plain letter itself, which lets you cycle back to the start. You can add new base keys, remove ones you never use, or reorder variants to put your most-used accents first. Changes take effect the next time Accentra starts.</p>
+  <p>Each character in the string becomes one step in the cycle. The last character is typically the plain letter itself, which lets you cycle back to the start. You can add new base keys, remove ones you never use, or reorder variants to put your most-used accents first. Changes take effect immediately — no restart needed.</p>
 </section>
 
 <!-- System requirements -->
@@ -405,7 +418,7 @@
     <li><span class="tick">&#10003;</span> <strong>No network access:</strong> Accentra makes no network connections of any kind.</li>
     <li><span class="tick">&#10003;</span> <strong>No telemetry:</strong> No usage data, crash reports, or analytics are collected.</li>
     <li><span class="tick">&#10003;</span> <strong>No third-party services:</strong> Accentra has no dependencies on external services or APIs.</li>
-    <li><span class="tick">&#10003;</span> <strong>Local data only:</strong> The only file written to disk is <code>accent-maps.json</code> in <code>%LOCALAPPDATA%\Accentra\</code>, which contains your accent configuration and nothing else.</li>
+    <li><span class="tick">&#10003;</span> <strong>Local data only:</strong> The only file written to disk is <code>accent-maps.json</code>, which contains your accent configuration and nothing else.</li>
   </ul>
 </section>
 

@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [1.4.0] - 2026-05-12
+
+### Added
+- New tray menu item: **Pause accent input** — temporarily disables accent mode without quitting Accentra. Click again to resume. Useful when you need normal key auto-repeat.
+- Auto-repeat is now suppressed for all letter keys (A–Z) while Accentra is running, not just keys that have accent variants defined. This makes the behavior consistent across the keyboard.
+
 ## [1.3.0] - 2026-05-07
 
 ### Changed

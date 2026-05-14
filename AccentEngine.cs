@@ -7,8 +7,11 @@ class AccentEngine
 
     private enum State { Idle, WaitingForLongPress, AccentMode }
 
+    public bool Enabled { get; set; } = true;
+
     private State _state = State.Idle;
     private uint _trackedVk;
+    private uint _lastDownVk;  // detects auto-repeat for unmapped letter keys
     private char[] _variants = [];
     private int _variantIndex;
     private bool _keyIsHeld;   // true while the tracked key hasn't been released yet
@@ -27,6 +30,8 @@ class AccentEngine
     // Returns true if the keystroke should be suppressed.
     public bool ProcessKey(uint vkCode, bool isDown, bool isUp)
     {
+        if (!Enabled) return false;
+
         switch (_state)
         {
             case State.Idle when isDown:
@@ -35,8 +40,15 @@ class AccentEngine
                 {
                     _trackedVk = vkCode;
                     _variants = variants;
+                    _lastDownVk = vkCode;
                     _state = State.WaitingForLongPress;
                     _longPressTimer.Start();
+                }
+                else
+                {
+                    if (isDown && vkCode == _lastDownVk && IsLetterKey(vkCode))
+                        return true; // suppress auto-repeat for unmapped letter keys
+                    _lastDownVk = vkCode;
                 }
                 return false;
 
@@ -51,6 +63,7 @@ class AccentEngine
             case State.WaitingForLongPress when isUp && vkCode == _trackedVk:
                 _longPressTimer.Stop();
                 _state = State.Idle;
+                _lastDownVk = 0;
                 return false;
 
             case State.AccentMode when isDown && vkCode == _trackedVk && _keyIsHeld:
@@ -67,6 +80,10 @@ class AccentEngine
 
             case State.AccentMode when isDown && !IsModifierKey(vkCode):
                 ExitAccentMode();
+                return false;
+
+            case State.Idle when isUp:
+                _lastDownVk = 0;
                 return false;
 
             default:
@@ -107,6 +124,8 @@ class AccentEngine
 
     private static bool IsShiftHeld() =>
         (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+
+    private static bool IsLetterKey(uint vk) => vk is (>= 0x41 and <= 0x5A) or (>= 0x30 and <= 0x39); // VK_A–VK_Z, VK_0–VK_9
 
     private static bool IsModifierKey(uint vk) => (int)vk is
         NativeMethods.VK_SHIFT or NativeMethods.VK_CONTROL or NativeMethods.VK_MENU or
