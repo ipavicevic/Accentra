@@ -75,7 +75,7 @@ jobs:
           & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
 
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: Accentra-${{ steps.version.outputs.value }}-${{ steps.version.outputs.branch }}
           path: publish/Accentra.msix
