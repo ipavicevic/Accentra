@@ -31,6 +31,7 @@ class AccentEngine
     public bool ProcessKey(uint vkCode, bool isDown, bool isUp)
     {
         if (!Enabled) return false;
+        if (!IsCurrentLayoutLatin()) return false;
 
         switch (_state)
         {
@@ -132,4 +133,27 @@ class AccentEngine
         NativeMethods.VK_CAPITAL or NativeMethods.VK_LSHIFT or NativeMethods.VK_RSHIFT or
         NativeMethods.VK_LCONTROL or NativeMethods.VK_RCONTROL or
         NativeMethods.VK_LMENU or NativeMethods.VK_RMENU;
+
+    private IntPtr _cachedHkl = IntPtr.Zero;
+    private bool _cachedIsLatin = true;
+
+    // Checks whether the foreground window's keyboard layout produces Latin characters.
+    // The HKL pointer is checked on every call (three cheap Win32 reads); ToUnicodeEx
+    // is only invoked when the layout actually changes.
+    private bool IsCurrentLayoutLatin()
+    {
+        var hwnd = NativeMethods.GetForegroundWindow();
+        var tid = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+        var hkl = NativeMethods.GetKeyboardLayout(tid);
+
+        if (hkl == _cachedHkl) return _cachedIsLatin;
+
+        var keyState = new byte[256]; // all keys up, no modifiers
+        var buf = new char[4];
+        int result = NativeMethods.ToUnicodeEx(0x41, 0, keyState, buf, buf.Length, 0, hkl);
+        // result > 0 means a character was produced; check it's within Latin Extended-B (≤ U+024F)
+        _cachedHkl = hkl;
+        _cachedIsLatin = result <= 0 || buf[0] <= 'ɏ';
+        return _cachedIsLatin;
+    }
 }

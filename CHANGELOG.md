@@ -2,6 +2,11 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [1.4.1] - 2026-05-15
+
+### Fixed
+- Accent mode no longer activates when a non-Latin keyboard layout is active (e.g. Serbian Cyrillic, Greek, Arabic). Accentra now passes all keystrokes through unchanged when the foreground window's input language uses a non-Latin script.
+
 ## [1.4.0] - 2026-05-12
 
 ### Added
