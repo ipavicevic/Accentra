@@ -144,6 +144,8 @@ class AccentEngine
     private bool IsCurrentLayoutLatin()
     {
         var hwnd = NativeMethods.GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return _cachedIsLatin; // no foreground window — keep cached result
+
         var tid = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
         var hkl = NativeMethods.GetKeyboardLayout(tid);
 
@@ -155,7 +157,7 @@ class AccentEngine
         // result > 0 means a character was produced; check it's within Latin Extended-B (≤ U+024F)
         _cachedHkl = hkl;
         _cachedIsLatin = result <= 0 || buf[0] <= 'ɏ';
-        Logger.Log($"Layout changed: hkl=0x{hkl:X} ToUnicodeEx result={result} char={(result > 0 ? $"U+{(int)buf[0]:X4} '{buf[0]}'" : "none")} isLatin={_cachedIsLatin}");
+        Logger.Log($"Layout changed: hwnd=0x{hwnd:X} tid={tid} hkl=0x{hkl:X} ToUnicodeEx result={result} char={(result > 0 ? $"U+{(int)buf[0]:X4} '{buf[0]}'" : "none")} isLatin={_cachedIsLatin}");
         return _cachedIsLatin;
     }
 }
