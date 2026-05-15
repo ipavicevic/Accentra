@@ -330,6 +330,7 @@
   <p>Right-click the <strong>ā</strong> icon in the system tray for options:</p>
   <ul style="margin: 14px 0 0 20px; color: var(--muted);">
     <li style="margin-bottom: 8px;"><strong>Start with Windows</strong> — toggle whether Accentra launches automatically on login (enabled by default after install).</li>
+    <li style="margin-bottom: 8px;"><strong>Pause accent input</strong> — temporarily suspend accent mode without quitting. Click again to resume. When a non-Latin keyboard layout is active (e.g. Cyrillic, Greek, Arabic), this item appears checked and grayed out — accent mode is automatically suspended and all keystrokes pass through untouched.</li>
     <li style="margin-bottom: 8px;"><strong>Edit accent maps...</strong> — opens the accent maps folder in Explorer so you can customize which accented characters are available for each key.</li>
     <li style="margin-bottom: 8px;"><strong>About Accentra...</strong> — opens this web page.</li>
     <li><strong>Exit</strong> — stop Accentra until the next login (or until you run it again).</li>
@@ -350,6 +351,7 @@
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Touch / soft keyboard:</strong> Accentra intercepts physical keyboard input only. The Windows on-screen keyboard and touch input use a different path that bypasses the hook entirely.</li>
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Elevated apps:</strong> Accentra does not intercept keystrokes in apps running as Administrator. See <a href="#running-as-admin">Running as Admin</a> for a workaround.</li>
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Key auto-repeat:</strong> While Accentra is running, holding a key enters accent mode instead of producing repeated characters. Auto-repeat is not available for keys that have accent variants defined.</li>
+    <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Non-Latin keyboard layouts:</strong> Accent mode is designed for Latin-script input and is automatically suspended when a non-Latin layout is active (Cyrillic, Greek, Arabic, CJK, etc.). All keystrokes pass through normally in that state. Switching back to a Latin layout re-enables accent mode instantly.</li>
   </ul>
 </section>
 
