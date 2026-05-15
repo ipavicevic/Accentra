@@ -34,12 +34,6 @@ class TrayApp : ApplicationContext
         };
 
         var menu = new ContextMenuStrip();
-        menu.Opening += (_, _) =>
-        {
-            bool latin = _engine.IsLatinLayout;
-            pauseItem.Enabled = latin;
-            pauseItem.Checked = !latin || !_engine.Enabled;
-        };
         menu.Items.Add(startWithWindowsItem);
         menu.Items.Add(pauseItem);
         menu.Items.Add(new ToolStripSeparator());

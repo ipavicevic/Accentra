@@ -8,7 +8,6 @@ class AccentEngine
     private enum State { Idle, WaitingForLongPress, AccentMode }
 
     public bool Enabled { get; set; } = true;
-    public bool IsLatinLayout => IsCurrentLayoutLatin();
 
     private State _state = State.Idle;
     private uint _trackedVk;
