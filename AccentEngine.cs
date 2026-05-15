@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Accentra;
 
 class AccentEngine
@@ -150,15 +152,22 @@ class AccentEngine
             return _cachedIsLatin;
         }
 
-        var tid = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
-        var hkl = NativeMethods.GetKeyboardLayout(tid);
+        // GetWindowThreadProcessId gives the window-creation thread, which may differ from
+        // the input thread. GetGUIThreadInfo gives hwndFocus — the actual focused control
+        // whose thread owns the keyboard layout.
+        var windowTid = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+        var gui = new NativeMethods.GUITHREADINFO { cbSize = (uint)Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
+        NativeMethods.GetGUIThreadInfo(windowTid, ref gui);
+        var focusHwnd = gui.hwndFocus != IntPtr.Zero ? gui.hwndFocus : hwnd;
+        var focusTid = NativeMethods.GetWindowThreadProcessId(focusHwnd, IntPtr.Zero);
+        var hkl = NativeMethods.GetKeyboardLayout(focusTid);
 
         if (hkl == _cachedHkl)
         {
             if ((DateTime.Now - _lastDiagLog).TotalSeconds >= 1)
             {
                 _lastDiagLog = DateTime.Now;
-                Logger.Log($"Layout same: hwnd=0x{hwnd:X} tid={tid} hkl=0x{hkl:X} isLatin={_cachedIsLatin}");
+                Logger.Log($"Layout same: hwnd=0x{hwnd:X} windowTid={windowTid} focusHwnd=0x{focusHwnd:X} focusTid={focusTid} hkl=0x{hkl:X} isLatin={_cachedIsLatin}");
             }
             return _cachedIsLatin;
         }
@@ -169,7 +178,7 @@ class AccentEngine
         // result > 0 means a character was produced; check it's within Latin Extended-B (≤ U+024F)
         _cachedHkl = hkl;
         _cachedIsLatin = result <= 0 || buf[0] <= 'ɏ';
-        Logger.Log($"Layout changed: hwnd=0x{hwnd:X} tid={tid} hkl=0x{hkl:X} ToUnicodeEx result={result} char={(result > 0 ? $"U+{(int)buf[0]:X4} '{buf[0]}'" : "none")} isLatin={_cachedIsLatin}");
+        Logger.Log($"Layout changed: hwnd=0x{hwnd:X} windowTid={windowTid} focusHwnd=0x{focusHwnd:X} focusTid={focusTid} hkl=0x{hkl:X} ToUnicodeEx result={result} char={(result > 0 ? $"U+{(int)buf[0]:X4} '{buf[0]}'" : "none")} isLatin={_cachedIsLatin}");
         return _cachedIsLatin;
     }
 }
