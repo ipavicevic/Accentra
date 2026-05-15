@@ -136,6 +136,7 @@ class AccentEngine
 
     private IntPtr _cachedHkl = IntPtr.Zero;
     private bool _cachedIsLatin = true;
+    private DateTime _lastDiagLog = DateTime.MinValue;
 
     // Checks whether the foreground window's keyboard layout produces Latin characters.
     // The HKL pointer is checked on every call (three cheap Win32 reads); ToUnicodeEx
@@ -143,12 +144,24 @@ class AccentEngine
     private bool IsCurrentLayoutLatin()
     {
         var hwnd = NativeMethods.GetForegroundWindow();
-        if (hwnd == IntPtr.Zero) return _cachedIsLatin; // no foreground window — keep cached result
+        if (hwnd == IntPtr.Zero)
+        {
+            Logger.Log($"Layout check: hwnd=0 (no foreground) — keeping cached isLatin={_cachedIsLatin}");
+            return _cachedIsLatin;
+        }
 
         var tid = NativeMethods.GetWindowThreadProcessId(hwnd, IntPtr.Zero);
         var hkl = NativeMethods.GetKeyboardLayout(tid);
 
-        if (hkl == _cachedHkl) return _cachedIsLatin;
+        if (hkl == _cachedHkl)
+        {
+            if ((DateTime.Now - _lastDiagLog).TotalSeconds >= 1)
+            {
+                _lastDiagLog = DateTime.Now;
+                Logger.Log($"Layout same: hwnd=0x{hwnd:X} tid={tid} hkl=0x{hkl:X} isLatin={_cachedIsLatin}");
+            }
+            return _cachedIsLatin;
+        }
 
         var keyState = new byte[256]; // all keys up, no modifiers
         var buf = new char[4];
