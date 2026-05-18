@@ -7,12 +7,12 @@ on:
 
 jobs:
   msix:
-    runs-on: windows-latest
+    runs-on: windows-2025
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -74,7 +74,7 @@ jobs:
           & "$($sdk.FullName)\x64\signtool.exe" sign /fd sha256 /f accentra.pfx /p "${{ secrets.SIGNING_CERT_PASSWORD }}" publish\Accentra.msix
 
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Accentra-${{ steps.version.outputs.value }}-${{ steps.version.outputs.branch }}
           path: publish/Accentra.msix
