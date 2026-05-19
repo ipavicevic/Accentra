@@ -10,6 +10,7 @@ static class Program
     {
         bool elevated = new WindowsPrincipal(WindowsIdentity.GetCurrent())
                             .IsInRole(WindowsBuiltInRole.Administrator);
+        Logger.Prune();
         Logger.Log($"Startup args=[{string.Join(", ", args)}] elevated={elevated} path={Environment.ProcessPath}");
 
         // Kill any existing instance so a new one (e.g. elevated) can take over.

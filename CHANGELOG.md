@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [1.4.1] - 2026-05-18
+
+### Added
+- New tray menu item: **Open log file...** opens `accentra.log` in Notepad for troubleshooting.
+- Log file is automatically pruned to the last 500 lines on startup if it exceeds 1 MB.
+
 ## [1.4.0] - 2026-05-12
 
 ### Added
