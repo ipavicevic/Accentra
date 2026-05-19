@@ -7,6 +7,7 @@ class TrayApp : ApplicationContext
     private readonly NotifyIcon _trayIcon;
     private readonly KeyboardHook _hook;
     private readonly AccentEngine _engine;
+    private readonly ToolStripMenuItem _sectionsItem;
 
     public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
     {
@@ -33,12 +34,18 @@ class TrayApp : ApplicationContext
             pauseItem.Checked = !_engine.Enabled;
         };
 
+        _sectionsItem = new ToolStripMenuItem("Sections");
+        BuildSectionsMenu();
+
         var menu = new ContextMenuStrip();
         menu.Items.Add(startWithWindowsItem);
         menu.Items.Add(pauseItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(_sectionsItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Edit accent maps...", null, (_, _) =>
-            Process.Start(new ProcessStartInfo("explorer.exe", Installer.AccentMapsDir) { UseShellExecute = true }));
+            Process.Start(new ProcessStartInfo(
+                Path.Combine(Installer.AccentMapsDir, "accent-maps.json")) { UseShellExecute = true }));
         menu.Items.Add("Open log file...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("notepad.exe", Logger.LogPath) { UseShellExecute = true }));
         menu.Items.Add("About Accentra...", null, (_, _) =>
@@ -64,9 +71,24 @@ class TrayApp : ApplicationContext
         WireAccentMapsOnceLoopIsRunning();
     }
 
+    private void BuildSectionsMenu()
+    {
+        _sectionsItem.DropDownItems.Clear();
+        foreach (var (name, enabled) in AccentMaps.GetSections())
+        {
+            var item = new ToolStripMenuItem(name) { Checked = enabled };
+            var capName = name;
+            item.Click += (_, _) =>
+            {
+                AccentMaps.ToggleSection(capName);
+                item.Checked = !item.Checked;
+            };
+            _sectionsItem.DropDownItems.Add(item);
+        }
+    }
+
     private static void ShowWelcomeOnceLoopIsRunning()
     {
-        // Defer until the message loop is running so the tray icon is already painted.
         var timer = new System.Windows.Forms.Timer { Interval = 200 };
         timer.Tick += (_, _) =>
         {
@@ -97,6 +119,7 @@ class TrayApp : ApplicationContext
             var syncCtx = SynchronizationContext.Current!;
             AccentMaps.Reloaded += error => syncCtx.Post(_ =>
             {
+                BuildSectionsMenu();
                 if (error is null)
                     _trayIcon.ShowBalloonTip(3000, "Accentra", "Accent maps reloaded.", ToolTipIcon.Info);
                 else
