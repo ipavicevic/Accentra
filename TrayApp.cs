@@ -8,6 +8,7 @@ class TrayApp : ApplicationContext
     private readonly KeyboardHook _hook;
     private readonly AccentEngine _engine;
     private readonly ToolStripMenuItem _sectionsItem;
+    private bool _suppressMenuClose;
 
     public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
     {
@@ -38,6 +39,14 @@ class TrayApp : ApplicationContext
         BuildSectionsMenu();
 
         var menu = new ContextMenuStrip();
+        menu.Closing += (_, e) =>
+        {
+            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked && _suppressMenuClose)
+            {
+                e.Cancel = true;
+                _suppressMenuClose = false;
+            }
+        };
         menu.Items.Add(startWithWindowsItem);
         menu.Items.Add(pauseItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -80,6 +89,7 @@ class TrayApp : ApplicationContext
             var capName = name;
             item.Click += (_, _) =>
             {
+                _suppressMenuClose = true;
                 AccentMaps.ToggleSection(capName);
                 item.Checked = !item.Checked;
             };
