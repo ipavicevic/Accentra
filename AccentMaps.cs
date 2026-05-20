@@ -205,7 +205,11 @@ static class AccentMaps
                 Maps = s.Maps.ToDictionary(kv => kv.Key.ToString(), kv => new string(kv.Value))
             }).ToList()
         };
-        var options = new JsonSerializerOptions { WriteIndented = true };
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
         File.WriteAllText(path, JsonSerializer.Serialize(model, options));
     }
 
