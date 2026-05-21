@@ -41,7 +41,7 @@ class TrayApp : ApplicationContext
         var menu = new ContextMenuStrip();
         menu.Closing += (_, e) =>
         {
-            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked && _suppressMenuClose)
+            if (_suppressMenuClose)
             {
                 e.Cancel = true;
                 _suppressMenuClose = false;
