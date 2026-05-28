@@ -7,13 +7,14 @@ static class AccentMaps
 {
     private const string ResourceName = "Accentra.accent-maps.json";
     private const string FileName = "accent-maps.json";
+    private const int ExpectedVersion = 2;
 
     private record Section(string Name, bool Enabled, Dictionary<char, char[]> Maps);
 
     private class FileModel
     {
         [JsonPropertyName("version")]
-        public int Version { get; set; } = 2;
+        public int Version { get; set; } = ExpectedVersion;
         [JsonPropertyName("sections")]
         public List<SectionModel> Sections { get; set; } = [];
     }
@@ -36,6 +37,7 @@ static class AccentMaps
     private static System.Threading.Timer? _debounce;
 
     public static string? LoadError { get; private set; }
+    public static string? VersionMismatchMessage { get; private set; }
 
     // null = success, error string = failure; only fires on external file reload
     public static event Action<string?>? Reloaded;
@@ -77,16 +79,30 @@ static class AccentMaps
         {
             try
             {
-                var sections = ParseFile(File.ReadAllText(dataPath), out bool migrated);
-                if (migrated)
+                var json = File.ReadAllText(dataPath);
+                var fileVersion = ReadVersion(json);
+
+                if (fileVersion != ExpectedVersion)
                 {
-                    SaveSections(sections, dataPath);
-                    Logger.Log($"AccentMaps migrated v1→v2: {dataPath}");
+                    var backupPath = Path.Combine(Installer.AccentMapsDir,
+                        $"accent-maps.v{fileVersion}.backup.json");
+                    File.Copy(dataPath, backupPath, overwrite: true);
+                    Logger.Log($"AccentMaps version mismatch (file=v{fileVersion}, expected=v{ExpectedVersion}): backed up to {backupPath}");
+
+                    var embedded = ReadEmbedded();
+                    File.WriteAllText(dataPath, embedded);
+                    Logger.Log($"AccentMaps extracted embedded v{ExpectedVersion} to {dataPath}");
+
+                    VersionMismatchMessage = fileVersion < ExpectedVersion
+                        ? $"Your accent maps have been upgraded to v{ExpectedVersion}. Your previous maps are saved as accent-maps.v{fileVersion}.backup.json in the accent maps folder."
+                        : $"Your accent maps (v{fileVersion}) are newer than this version of Accentra expects. They have been backed up as accent-maps.v{fileVersion}.backup.json and reset to defaults.";
+
+                    var fresh = ParseFile(embedded);
+                    return (fresh, Merge(fresh));
                 }
-                else
-                {
-                    Logger.Log($"AccentMaps loaded from {dataPath}");
-                }
+
+                var sections = ParseFile(json);
+                Logger.Log($"AccentMaps loaded from {dataPath}");
                 return (sections, Merge(sections));
             }
             catch (Exception ex)
@@ -105,7 +121,7 @@ static class AccentMaps
         {
             try
             {
-                var sections = ParseFile(File.ReadAllText(exePath), out _);
+                var sections = ParseFile(File.ReadAllText(exePath));
                 Logger.Log($"AccentMaps loaded from EXE dir: {exePath}");
                 return (sections, Merge(sections));
             }
@@ -115,7 +131,7 @@ static class AccentMaps
         Logger.Log("AccentMaps using embedded default");
         try
         {
-            var sections = ParseFile(ReadEmbedded(), out _);
+            var sections = ParseFile(ReadEmbedded());
             return (sections, Merge(sections));
         }
         catch (Exception ex) { Logger.Log($"AccentMaps embedded JSON invalid: {ex.Message}"); }
@@ -123,38 +139,18 @@ static class AccentMaps
         return ([], []);
     }
 
-    private static List<Section> ParseFile(string json, out bool migrated)
+    private static int ReadVersion(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
+        return doc.RootElement.TryGetProperty("version", out var v) ? v.GetInt32() : 0;
+    }
 
-        if (!root.TryGetProperty("version", out _))
-        {
-            migrated = true;
-            return MigrateV1(root);
-        }
-
-        migrated = false;
+    private static List<Section> ParseFile(string json)
+    {
         var model = JsonSerializer.Deserialize<FileModel>(json)!;
         return model.Sections
             .Select(s => new Section(s.Name, s.Enabled, ParseMaps(s.Maps)))
             .ToList();
-    }
-
-    private static List<Section> MigrateV1(JsonElement root)
-    {
-        var lettersMap = new Dictionary<string, string>();
-        foreach (var prop in root.EnumerateObject())
-            if (prop.Name.Length == 1)
-                lettersMap[prop.Name] = prop.Value.GetString()!;
-
-        // Bring in the non-letters sections from the embedded v2 default
-        var embeddedModel = JsonSerializer.Deserialize<FileModel>(ReadEmbedded())!;
-        var result = new List<Section> { new("letters", true, ParseMaps(lettersMap)) };
-        result.AddRange(embeddedModel.Sections
-            .Where(s => s.Name != "letters")
-            .Select(s => new Section(s.Name, s.Enabled, ParseMaps(s.Maps))));
-        return result;
     }
 
     private static Dictionary<char, char[]> ParseMaps(Dictionary<string, string> raw) =>
@@ -181,7 +177,6 @@ static class AccentMaps
     private static void Save()
     {
         var path = Path.Combine(Installer.AccentMapsDir, FileName);
-        // Suppress the watcher event triggered by our own write
         if (_watcher != null) _watcher.EnableRaisingEvents = false;
         try
         {
@@ -240,7 +235,7 @@ static class AccentMaps
         var path = Path.Combine(Installer.AccentMapsDir, FileName);
         try
         {
-            var sections = ParseFile(File.ReadAllText(path), out _);
+            var sections = ParseFile(File.ReadAllText(path));
             lock (_sectionsLock)
             {
                 _sections = sections;

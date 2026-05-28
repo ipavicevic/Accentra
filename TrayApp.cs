@@ -95,7 +95,9 @@ class TrayApp : ApplicationContext
             timer.Stop();
             timer.Dispose();
 
-            if (AccentMaps.LoadError is { } startupErr)
+            if (AccentMaps.VersionMismatchMessage is { } versionMsg)
+                _trayIcon.ShowBalloonTip(8000, "Accentra — accent maps updated", versionMsg, ToolTipIcon.Info);
+            else if (AccentMaps.LoadError is { } startupErr)
                 _trayIcon.ShowBalloonTip(8000, "Accentra — accent-maps.json error",
                     $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.", ToolTipIcon.Warning);
 
