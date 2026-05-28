@@ -50,6 +50,15 @@ static class AccentMaps
         StartWatcher();
     }
 
+    public static IReadOnlyDictionary<char, char[]>? GetSectionMaps(string name)
+    {
+        lock (_sectionsLock)
+        {
+            var section = _sections.FirstOrDefault(s => s.Name == name);
+            return section is null ? null : section.Maps;
+        }
+    }
+
     public static IReadOnlyList<(string Name, bool Enabled)> GetSections()
     {
         lock (_sectionsLock)
