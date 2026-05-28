@@ -11,7 +11,7 @@ class TrayApp : ApplicationContext
     private static string DisplayVersion =>
         string.Join(".", Application.ProductVersion.Split('.').Take(3));
 
-    public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
+    public TrayApp(bool firstRun = false, bool elevatedTakeover = false, bool elevated = false)
     {
         _engine = new AccentEngine();
         _hook = new KeyboardHook(_engine);
@@ -42,6 +42,8 @@ class TrayApp : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Sections...", null, (_, _) => new SectionsForm().ShowDialog());
         menu.Items.Add(new ToolStripSeparator());
+        if (!elevated)
+            menu.Items.Add("Run elevated...", null, (_, _) => RunElevated());
         menu.Items.Add("Edit accent maps...", null, (_, _) =>
             Process.Start(new ProcessStartInfo(
                 Installer.AccentMapsDir) { UseShellExecute = true }));
@@ -136,6 +138,22 @@ class TrayApp : ApplicationContext
             _trayIcon.ShowBalloonTip(4000, "Accentra", "Now running elevated — accent mode works in admin apps.", ToolTipIcon.Info);
         };
         timer.Start();
+    }
+
+    private static void RunElevated()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("Accentra.exe") { Verb = "runas", UseShellExecute = true });
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // User cancelled the UAC prompt — nothing to do
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"RunElevated failed: {ex.Message}");
+        }
     }
 
     private static Icon LoadIcon()

@@ -55,6 +55,6 @@ static class Program
         Logger.Log("Starting tray app");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new TrayApp(firstRun: firstRun, elevatedTakeover: elevatedTakeover));
+        Application.Run(new TrayApp(firstRun: firstRun, elevatedTakeover: elevatedTakeover, elevated: elevated));
     }
 }
