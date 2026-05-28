@@ -65,15 +65,33 @@ class SectionsForm : Form
         {
             var cb = new CheckBox
             {
-                Text = char.ToUpper(name[0]) + name[1..],
                 Checked = enabled,
                 Left = 16,
                 Top = y,
-                Width = ClientSize.Width - 32,
+                Width = 20,
+                Height = 20,
                 Font = new Font("Segoe UI", 9f),
             };
             checkBoxes.Add(cb);
             Controls.Add(cb);
+
+            var sectionName = name;
+            var link = new LinkLabel
+            {
+                Text = char.ToUpper(name[0]) + name[1..],
+                Left = 38,
+                Top = y + 1,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9f),
+                LinkBehavior = LinkBehavior.HoverUnderline,
+            };
+            link.LinkClicked += (_, _) =>
+            {
+                var maps = AccentMaps.GetSectionMaps(sectionName);
+                if (maps is not null)
+                    new SectionReferenceForm(sectionName, maps).Show(this);
+            };
+            Controls.Add(link);
             y += 26;
         }
 

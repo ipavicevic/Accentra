@@ -89,15 +89,23 @@ Uses `Windows.ApplicationModel.StartupTask` API when running as MSIX, falls back
 
 ## Versioning Policy
 
-Versions follow `Major.Minor.Revision`:
+Versions follow `Major.Minor.Revision` for releases, with an optional 4th part during development:
 
 | Part | When to bump | Examples |
 |------|-------------|---------|
 | **Major** | Breaking change to user-facing behavior or config format | `accent-maps.json` schema change, fundamental UX change, dropping a Windows version |
 | **Minor** | New user-visible functionality | New tray menu item, new accent keys, new distribution channel |
 | **Revision** | Bug fixes and internal changes with no new features | Workflow fixes, manifest corrections, path bug fixes |
+| **4th part** | Dev/test iterations within a feature branch | Increment each push for testing; dropped at release |
 
 When the minor version bumps, reset revision to 0. When the major version bumps, reset both minor and revision to 0.
+
+**Development workflow:**
+- Start a new feature branch: bump Minor (or Revision for a fix), set 4th part to 1 (e.g. `2.1.0.1`)
+- Each test push: increment the 4th part (`2.1.0.2`, `2.1.0.3`, …)
+- PR / release: drop the 4th part (`2.1.0`)
+
+The 4th part is hidden from users via `DisplayVersion` in `TrayApp.cs`.
 
 ## Release Process
 
