@@ -8,6 +8,9 @@ class TrayApp : ApplicationContext
     private readonly KeyboardHook _hook;
     private readonly AccentEngine _engine;
 
+    private static string DisplayVersion =>
+        string.Join(".", Application.ProductVersion.Split('.').Take(3));
+
     public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
     {
         _engine = new AccentEngine();
@@ -37,19 +40,22 @@ class TrayApp : ApplicationContext
         menu.Items.Add(startWithWindowsItem);
         menu.Items.Add(pauseItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Sections...", null, (_, _) => new SectionsForm().ShowDialog());
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Edit accent maps...", null, (_, _) =>
-            Process.Start(new ProcessStartInfo("explorer.exe", Installer.AccentMapsDir) { UseShellExecute = true }));
+            Process.Start(new ProcessStartInfo(
+                Installer.AccentMapsDir) { UseShellExecute = true }));
         menu.Items.Add("Open log file...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("notepad.exe", Logger.LogPath) { UseShellExecute = true }));
         menu.Items.Add("About Accentra...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/") { UseShellExecute = true }));
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => ExitThread());
+        menu.Items.Add("Quit", null, (_, _) => ExitThread());
 
         _trayIcon = new NotifyIcon
         {
             Icon = LoadIcon(),
-            Text = $"Accentra {Application.ProductVersion}",
+            Text = $"Accentra {DisplayVersion}",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -66,14 +72,13 @@ class TrayApp : ApplicationContext
 
     private static void ShowWelcomeOnceLoopIsRunning()
     {
-        // Defer until the message loop is running so the tray icon is already painted.
         var timer = new System.Windows.Forms.Timer { Interval = 200 };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
             timer.Dispose();
             MessageBox.Show(
-                $"Accentra {Application.ProductVersion} is now running in your system tray.\n\n" +
+                $"Accentra {DisplayVersion} is now running in your system tray.\n\n" +
                 "Right-click the 'ā' icon in the tray for options. Accentra will start automatically with Windows.",
                 "Welcome to Accentra",
                 MessageBoxButtons.OK,
@@ -90,7 +95,9 @@ class TrayApp : ApplicationContext
             timer.Stop();
             timer.Dispose();
 
-            if (AccentMaps.LoadError is { } startupErr)
+            if (AccentMaps.VersionMismatchMessage is { } versionMsg)
+                _trayIcon.ShowBalloonTip(8000, "Accentra — accent maps updated", versionMsg, ToolTipIcon.Info);
+            else if (AccentMaps.LoadError is { } startupErr)
                 _trayIcon.ShowBalloonTip(8000, "Accentra — accent-maps.json error",
                     $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.", ToolTipIcon.Warning);
 
@@ -114,7 +121,7 @@ class TrayApp : ApplicationContext
         {
             timer.Stop();
             timer.Dispose();
-            _trayIcon.ShowBalloonTip(3000, "Accentra", $"Accentra {Application.ProductVersion} is running.", ToolTipIcon.Info);
+            _trayIcon.ShowBalloonTip(3000, "Accentra", $"Accentra {DisplayVersion} is running.", ToolTipIcon.Info);
         };
         timer.Start();
     }

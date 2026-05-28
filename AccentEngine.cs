@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Accentra;
 
 class AccentEngine
@@ -11,12 +13,15 @@ class AccentEngine
 
     private State _state = State.Idle;
     private uint _trackedVk;
-    private uint _lastDownVk;  // detects auto-repeat for unmapped letter keys
+    private uint _lastDownVk;  // detects auto-repeat for unmapped keys
     private char[] _variants = [];
     private int _variantIndex;
     private bool _keyIsHeld;   // true while the tracked key hasn't been released yet
     private readonly System.Windows.Forms.Timer _longPressTimer;
     private readonly System.Windows.Forms.Timer _confirmTimer;
+
+    // Reusable buffer for ToUnicodeEx — only called from the hook thread
+    private static readonly StringBuilder _uniBuffer = new(4);
 
     public AccentEngine()
     {
@@ -28,14 +33,15 @@ class AccentEngine
     }
 
     // Returns true if the keystroke should be suppressed.
-    public bool ProcessKey(uint vkCode, bool isDown, bool isUp)
+    public bool ProcessKey(uint vkCode, uint scanCode, bool isDown, bool isUp)
     {
         if (!Enabled) return false;
 
         switch (_state)
         {
             case State.Idle when isDown:
-                var variants = AccentMaps.GetVariants(vkCode, IsShiftHeld());
+                var baseChar = ResolveChar(vkCode, scanCode);
+                var variants = baseChar != '\0' ? AccentMaps.GetVariants(baseChar, IsShiftHeld()) : null;
                 if (variants != null)
                 {
                     _trackedVk = vkCode;
@@ -46,8 +52,8 @@ class AccentEngine
                 }
                 else
                 {
-                    if (isDown && vkCode == _lastDownVk && IsLetterKey(vkCode))
-                        return true; // suppress auto-repeat for unmapped letter keys
+                    if (isDown && vkCode == _lastDownVk && IsMappableKey(vkCode))
+                        return true; // suppress auto-repeat for unmapped mappable keys
                     _lastDownVk = vkCode;
                 }
                 return false;
@@ -91,12 +97,36 @@ class AccentEngine
         }
     }
 
+    // Resolves the base (unshifted) character for a vkCode+scanCode pair.
+    // A-Z and 0-9 are layout-independent; OEM keys use ToUnicodeEx with Accentra's own thread HKL.
+    private static char ResolveChar(uint vkCode, uint scanCode)
+    {
+        if (vkCode is >= 0x41 and <= 0x5A)
+            return (char)(vkCode + 0x20); // A-Z → a-z
+
+        if (vkCode is >= 0x30 and <= 0x39)
+            return (char)vkCode; // 0-9
+
+        // OEM/punctuation: resolve via the keyboard layout active on Accentra's own thread.
+        // Include actual shift state so Shift+5 → '%' rather than '5'.
+        // This follows the system-wide layout (default Windows behaviour). Per-app layout
+        // switching is a documented limitation, same as the existing UAC limitation.
+        var hkl = NativeMethods.GetKeyboardLayout(0);
+        var keyState = new byte[256];
+        if (IsShiftHeld()) keyState[NativeMethods.VK_SHIFT] = 0x80;
+        _uniBuffer.Clear();
+        int result = NativeMethods.ToUnicodeEx(
+            vkCode, scanCode, keyState, _uniBuffer, _uniBuffer.Capacity,
+            NativeMethods.TOUNICODEEX_NO_DEAD_KEY, hkl);
+        return result > 0 ? _uniBuffer[0] : '\0';
+    }
+
     private void OnLongPress(object? sender, EventArgs e)
     {
         _longPressTimer.Stop();
         _state = State.AccentMode;
         _variantIndex = 0;
-        _keyIsHeld = true;  // key is still physically held when the timer fires
+        _keyIsHeld = true;
         CharacterInjector.Replace(_variants[0]);
         RestartConfirmTimer();
     }
@@ -125,7 +155,8 @@ class AccentEngine
     private static bool IsShiftHeld() =>
         (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
 
-    private static bool IsLetterKey(uint vk) => vk is (>= 0x41 and <= 0x5A) or (>= 0x30 and <= 0x39); // VK_A–VK_Z, VK_0–VK_9
+    private static bool IsMappableKey(uint vk) =>
+        vk is (>= 0x41 and <= 0x5A) or (>= 0x30 and <= 0x39);
 
     private static bool IsModifierKey(uint vk) => (int)vk is
         NativeMethods.VK_SHIFT or NativeMethods.VK_CONTROL or NativeMethods.VK_MENU or

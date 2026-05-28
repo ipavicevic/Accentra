@@ -39,10 +39,10 @@
       width: 96px; height: 96px;
       background: #1e5ac8;
       border-radius: 22%;
-      display: inline-flex; align-items: center; justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 52px; font-weight: 400; color: #fff;
       line-height: 1;
-      margin-bottom: 28px;
+      margin: 0 auto 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.28);
     }
 
@@ -73,7 +73,7 @@
     .btn-download .icon { margin-right: 8px; }
     .hero .note { margin-top: 14px; font-size: 0.85rem; opacity: 0.75; }
 
-    /* ── Sections ── */
+/* ── Sections ── */
     .section { max-width: 820px; margin: 0 auto; padding: 64px 24px; }
     .section + .section { border-top: 1px solid var(--border); }
 
@@ -233,6 +233,7 @@
 <header class="hero">
   <div class="hero-icon">ā</div>
   <h1>Accentra</h1>
+  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 2.0</p>
   <p class="tagline">Accented characters in any Windows app — no language switch, no alt codes.</p>
   <a class="btn-download"
      href="https://apps.microsoft.com/detail/9pp58npd3773">
@@ -244,10 +245,11 @@
 
 <!-- What's new -->
 <section class="section">
-  <h2>What's new in 1.4.0</h2>
+  <h2>What's new in 2.0</h2>
   <ul style="margin: 0 0 0 20px; color: var(--muted);">
-    <li>New tray menu item: <strong>Pause accent input</strong> — temporarily disables accent mode without quitting Accentra. Click again to resume. Useful when you need normal key auto-repeat.</li>
-    <li>Auto-repeat is now suppressed for all letter keys (A–Z) while Accentra is running, not just keys that have accent variants defined. This makes the behavior consistent across the keyboard.</li>
+    <li style="margin-bottom: 8px;"><strong>Accent sections</strong> — accent maps are now organized into named sections (Latin, Slavic, Nordic, …). Enable or disable entire groups from the new <strong>Sections…</strong> dialog without editing JSON.</li>
+    <li style="margin-bottom: 8px;"><strong>Seamless upgrades</strong> — when a new version of Accentra ships with updated default maps, your existing file is backed up automatically and the new defaults are installed. No data loss, no manual steps.</li>
+    <li><strong>Sections dialog</strong> — a proper settings window replaces the old inline submenu, with checkboxes for each section and OK / Cancel.</li>
   </ul>
   <p style="margin-top: 14px; font-size: 0.88rem;">
     <a href="https://github.com/ipavicevic/Accentra/blob/main/CHANGELOG.md">Full changelog on GitHub</a>
@@ -287,6 +289,16 @@
   </div>
 
   <p>Works in Discord, Messenger, browsers, Notepad — everywhere. No administrator rights required.</p>
+
+  <p>Because accent maps are fully customizable, you can go beyond language accents. Add Greek letters, math operators, or any Unicode symbol — and type them with the same hold-and-cycle gesture:</p>
+
+  <div class="demo-box">
+    <span style="color:#a6e3a1;"># with a custom math section enabled:</span><br>
+    <span class="key">f</span> (hold) <span class="arrow">→</span> <span class="result">∀</span>
+    &nbsp;&nbsp; <span class="key">e</span> (hold) <span class="arrow">→</span> <span class="result">∈</span>
+    &nbsp;&nbsp; <span class="key">i</span> (hold) <span class="arrow">→</span> <span class="result">∩</span><br>
+    <span style="color:#cdd6f4; opacity:0.6;"># result:</span> &nbsp;<span class="result">(∀x)(x ∈ A ∩ B)</span>
+  </div>
 </section>
 
 <!-- Installation -->
@@ -315,7 +327,10 @@
       <div class="install-num"></div>
       <div class="install-step-body">
         <h3>Done</h3>
-        <p>A small <strong>ã</strong> icon appears in your system tray. Accentra is running and will start automatically every time you log in.</p>
+        <p>Accentra is running and will start automatically every time you log in. The <strong>ā</strong> icon appears in your system tray — Windows places new tray apps in the hidden overflow area (the <strong>^</strong> arrow near the clock) by default.</p>
+        <div class="callout-warning">
+          <strong>Don't see the icon?</strong> Click the <strong>^</strong> arrow in the taskbar corner to expand hidden tray icons. To keep it always visible, go to <strong>Settings → Taskbar → Other system tray icons</strong> and turn on <strong>Accentra</strong>.
+        </div>
       </div>
     </div>
   </div>
@@ -331,9 +346,11 @@
   <p>Right-click the <strong>ā</strong> icon in the system tray for options:</p>
   <ul style="margin: 14px 0 0 20px; color: var(--muted);">
     <li style="margin-bottom: 8px;"><strong>Start with Windows</strong> — toggle whether Accentra launches automatically on login (enabled by default after install).</li>
-    <li style="margin-bottom: 8px;"><strong>Edit accent maps...</strong> — opens the accent maps folder in Explorer so you can customize which accented characters are available for each key.</li>
-    <li style="margin-bottom: 8px;"><strong>About Accentra...</strong> — opens this web page.</li>
-    <li><strong>Exit</strong> — stop Accentra until the next login (or until you run it again).</li>
+    <li style="margin-bottom: 8px;"><strong>Pause accent input</strong> — temporarily disable accent mode without quitting; all keystrokes pass through normally until you unpause.</li>
+    <li style="margin-bottom: 8px;"><strong>Sections…</strong> — open the Sections dialog to enable or disable individual accent groups (Latin, Slavic, Nordic, …).</li>
+    <li style="margin-bottom: 8px;"><strong>Edit accent maps…</strong> — opens the accent maps folder in Explorer so you can edit <code>accent-maps.json</code> directly.</li>
+    <li style="margin-bottom: 8px;"><strong>About Accentra…</strong> — opens this web page.</li>
+    <li><strong>Quit</strong> — stop Accentra until the next login (or until you run it again).</li>
   </ul>
 </section>
 

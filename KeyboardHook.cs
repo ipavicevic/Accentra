@@ -28,7 +28,7 @@ class KeyboardHook : IDisposable
                 bool isDown = msg is NativeMethods.WM_KEYDOWN or NativeMethods.WM_SYSKEYDOWN;
                 bool isUp = msg is NativeMethods.WM_KEYUP or NativeMethods.WM_SYSKEYUP;
 
-                if (_engine.ProcessKey(data.vkCode, isDown, isUp))
+                if (_engine.ProcessKey(data.vkCode, data.scanCode, isDown, isUp))
                     return (IntPtr)1;
             }
         }

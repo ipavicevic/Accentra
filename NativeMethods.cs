@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Accentra;
 
@@ -21,6 +22,23 @@ static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern short GetKeyState(int nVirtKey);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetKeyboardLayout(uint idThread);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetKeyboardState(byte[] lpKeyState);
+
+    [DllImport("user32.dll")]
+    public static extern int ToUnicodeEx(
+        uint wVirtKey,
+        uint wScanCode,
+        byte[] lpKeyState,
+        [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pwszBuff,
+        int cchBuff,
+        uint wFlags,
+        IntPtr dwhkl);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KBDLLHOOKSTRUCT
@@ -70,6 +88,9 @@ static class NativeMethods
     public const int VK_RCONTROL = 0xA3;
     public const int VK_LMENU = 0xA4;
     public const int VK_RMENU = 0xA5;
+
+    // Flags for ToUnicodeEx: do not modify dead-key state (Windows 10 1607+)
+    public const uint TOUNICODEEX_NO_DEAD_KEY = 0x4;
 
     public static readonly IntPtr AccentraSentinel = new(0xACCE0001);
 }
