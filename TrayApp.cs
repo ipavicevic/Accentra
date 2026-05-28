@@ -9,7 +9,7 @@ class TrayApp : ApplicationContext
     private readonly AccentEngine _engine;
 
     private static string DisplayVersion =>
-        string.Join(".", DisplayVersion.Split('.').Take(3));
+        string.Join(".", Application.ProductVersion.Split('.').Take(3));
 
     public TrayApp(bool firstRun = false, bool elevatedTakeover = false)
     {
