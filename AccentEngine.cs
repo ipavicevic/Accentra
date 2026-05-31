@@ -36,6 +36,7 @@ class AccentEngine
     public bool ProcessKey(uint vkCode, uint scanCode, bool isDown, bool isUp)
     {
         if (!Enabled) return false;
+        if (IsCtrlHeld() || IsAltHeld()) return false;
 
         switch (_state)
         {
@@ -154,6 +155,12 @@ class AccentEngine
 
     private static bool IsShiftHeld() =>
         (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+
+    private static bool IsCtrlHeld() =>
+        (NativeMethods.GetKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0;
+
+    private static bool IsAltHeld() =>
+        (NativeMethods.GetKeyState(NativeMethods.VK_MENU) & 0x8000) != 0;
 
     private static bool IsMappableKey(uint vk) =>
         vk is (>= 0x41 and <= 0x5A) or (>= 0x30 and <= 0x39);
