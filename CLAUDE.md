@@ -103,7 +103,7 @@ When the minor version bumps, reset revision to 0. When the major version bumps,
 **Development workflow:**
 - Start a new feature branch: bump Minor (or Revision for a fix), set 4th part to 1 (e.g. `2.1.0.1`)
 - Each test push: increment the 4th part (`2.1.0.2`, `2.1.0.3`, …)
-- PR / release: drop the 4th part (`2.1.0`)
+- PR / release: amend the version to drop the 4th part (`2.1.0`) and force-push before merging
 
 The 4th part is hidden from users via `DisplayVersion` in `TrayApp.cs`.
 
