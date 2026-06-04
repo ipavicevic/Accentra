@@ -273,6 +273,8 @@ static class AccentMaps
     {
         if (!_maps.TryGetValue(baseChar, out var variants))
             return null;
+        if (variants.Length == 0 || variants[^1] != baseChar)
+            variants = [.. variants, baseChar];
         return shifted ? Array.ConvertAll(variants, char.ToUpper) : variants;
     }
 }

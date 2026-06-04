@@ -21,12 +21,9 @@ class SectionReferenceForm : Form
         int y = 0;
         foreach (var (baseChar, variants) in maps.OrderBy(kv => kv.Key))
         {
-            var display = variants.Length > 0 && variants[^1] == baseChar
-                ? variants[..^1]
-                : variants;
             var row = new Label
             {
-                Text = $"{baseChar}  →  {string.Join("  ", display)}",
+                Text = $"{baseChar}  →  {string.Join("  ", variants)}",
                 Left = 0,
                 Top = y,
                 Width = panel.ClientSize.Width - 24,
