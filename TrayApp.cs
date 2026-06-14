@@ -51,6 +51,8 @@ class TrayApp : ApplicationContext
             Process.Start(new ProcessStartInfo("notepad.exe", Logger.LogPath) { UseShellExecute = true }));
         menu.Items.Add("About Accentra...", null, (_, _) =>
             Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/") { UseShellExecute = true }));
+        menu.Items.Add("Report a problem...", null, (_, _) =>
+            Process.Start(new ProcessStartInfo("https://forms.gle/iMYq1VFkgQ5o15Jm9") { UseShellExecute = true }));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Quit", null, (_, _) => ExitThread());
 
