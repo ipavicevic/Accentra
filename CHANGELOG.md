@@ -2,6 +2,11 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [2.2.0] - 2026-06-14
+
+### Added
+- New tray menu item: **Report a problem...** opens a feedback form for submitting bug reports.
+
 ## [1.4.1] - 2026-05-18
 
 ### Added
