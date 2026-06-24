@@ -52,9 +52,28 @@ static class Program
         bool firstRun = Installer.EnsureAccentMapsJson();
         bool elevatedTakeover = elevated && others.Length > 0;
 
+        Application.ThreadException += (_, e) => HandleUnhandledException(e.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex) HandleUnhandledException(ex);
+        };
+
         Logger.Log("Starting tray app");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new TrayApp(firstRun: firstRun, elevatedTakeover: elevatedTakeover, elevated: elevated));
+    }
+
+    static void HandleUnhandledException(Exception ex)
+    {
+        Logger.Log($"Unhandled exception: {ex}");
+        MessageBox.Show(
+            $"Accentra encountered an unexpected error:\n\n{ex.Message}\n\n" +
+            "The error has been written to the log file (Open log file… in the tray menu).\n\n" +
+            "Please report this problem so it can be fixed.",
+            "Accentra — Unexpected Error",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error);
+        Process.Start(new ProcessStartInfo("https://ipavicevic.github.io/Accentra/#known-issues") { UseShellExecute = true });
     }
 }
