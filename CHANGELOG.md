@@ -2,10 +2,15 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [2.2.1] - 2026-06-24
+
+### Fixed
+- Unexpected errors after startup now show a friendly message box with a link to report the problem, instead of the Windows crash dialog.
+
 ## [2.2.0] - 2026-06-14
 
 ### Added
-- New tray menu item: **Report a problem...** opens a feedback form for submitting bug reports.
+- New tray menu item: **Report a problem...** opens the Known Issues page on the Accentra website.
 
 ## [1.4.1] - 2026-05-18
 
