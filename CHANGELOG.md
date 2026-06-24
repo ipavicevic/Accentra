@@ -2,6 +2,11 @@
 
 All notable changes are documented here. Entries are written when the PR is merged — copy the relevant section into Partner Center's "What's new in this version" field when submitting a Store update.
 
+## [2.2.1] - 2026-06-15
+
+### Fixed
+- Sections dialog crash on launch in the GitHub release artifact MSIX — native SkiaSharp DLL is now included as a loose file in the package instead of being embedded in the EXE.
+
 ## [2.2.0] - 2026-06-14
 
 ### Added

@@ -38,8 +38,6 @@ jobs:
             -c Release `
             -r win-x64 `
             --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:Version=${{ steps.version.outputs.value }} `
             -o publish
 
@@ -52,6 +50,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force msix-layout | Out-Null
           Copy-Item publish\Accentra.exe msix-layout\
+          Get-ChildItem publish\*.dll | Copy-Item -Destination msix-layout\
           (Get-Content Package.appxmanifest) `
             -replace 'Version="0\.0\.0\.0"', 'Version="${{ steps.version.outputs.msix }}"' |
             Set-Content msix-layout\AppxManifest.xml
