@@ -17,6 +17,12 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The macOS project lives in a subfolder; keep it out of the default globs -->
+    <Compile Remove="Accentra.Mac/**" />
+    <EmbeddedResource Remove="Accentra.Mac/**" />
+    <None Remove="Accentra.Mac/**" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="accent-maps.json" />
     <EmbeddedResource Include="icon.ico" />
     <EmbeddedResource Include="logo.svg" />

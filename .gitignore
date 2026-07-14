@@ -5,3 +5,4 @@ obj/
 publish/
 .claude/
 Assets/
+dist/
