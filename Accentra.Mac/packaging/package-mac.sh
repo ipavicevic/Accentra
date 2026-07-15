@@ -49,7 +49,35 @@ ditto -c -k --keepParent "$APP" "$ZIP"
 
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
     echo "==> Notarizing (profile: $NOTARY_PROFILE)"
-    xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+    # Submit without --wait (it crashes with a bus error on some notarytool
+    # versions) and poll for the verdict instead. First submissions of a new
+    # hash have been observed to hang indefinitely while a resubmission of the
+    # same bytes clears in minutes — resubmit after a stall.
+    STALL_SECONDS="${NOTARY_STALL_SECONDS:-600}"
+    submit() {
+        xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" \
+            | sed -n 's/^ *id: //p' | head -1
+    }
+    SUBMISSION=$(submit)
+    echo "    submission: $SUBMISSION"
+    ATTEMPT=1
+    WAITED=0
+    while :; do
+        STATUS=$(xcrun notarytool info "$SUBMISSION" --keychain-profile "$NOTARY_PROFILE" \
+            | sed -n 's/^ *status: //p')
+        [[ "$STATUS" != "In Progress" ]] && break
+        sleep 30; WAITED=$((WAITED + 30))
+        if (( WAITED >= STALL_SECONDS && ATTEMPT < 3 )); then
+            ATTEMPT=$((ATTEMPT + 1)); WAITED=0
+            SUBMISSION=$(submit)
+            echo "    stalled — resubmitted (attempt $ATTEMPT): $SUBMISSION"
+        fi
+    done
+    echo "    status: $STATUS"
+    if [[ "$STATUS" != "Accepted" ]]; then
+        xcrun notarytool log "$SUBMISSION" --keychain-profile "$NOTARY_PROFILE" || true
+        exit 1
+    fi
     echo "==> Stapling"
     xcrun stapler staple "$APP"
     rm -f "$ZIP"

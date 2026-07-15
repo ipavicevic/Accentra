@@ -5,12 +5,48 @@ class MacKeyboardHook : IDisposable
     private static AccentEngine? _engine;
     private static MacNativeMethods.CGEventTapCallBack? _callbackRef;
     private static IntPtr _tap; // static so the callback can re-enable it
+    private MacTimer? _retryTimer;
+
+    // True once the event tap is installed (i.e. Accessibility is granted).
+    public bool IsActive => _tap != IntPtr.Zero;
+
+    // Invoked (on the main thread) when the tap activates only after an initial
+    // failure — i.e. right after the user grants Accessibility. Lets the UI show
+    // a one-time "ready" confirmation. Not called on a normal already-granted launch.
+    public Action? ActivatedAfterGrant { get; init; }
 
     public MacKeyboardHook(AccentEngine engine)
     {
         _engine = engine;
         _callbackRef = HookCallback;
 
+        if (!TryInstallTap())
+        {
+            // Accessibility permission not granted yet. Rather than blocking or
+            // forcing a relaunch, retry tap creation on a timer — CGEventTapCreate
+            // reflects live permission (unlike the cached AXIsProcessTrusted), so
+            // the hook activates the moment the user flips the toggle.
+            Logger.Log("CGEventTap creation failed — retrying until Accessibility is granted");
+            _retryTimer = new MacTimer { Interval = 2000 };
+            _retryTimer.Tick += (_, _) =>
+            {
+                if (TryInstallTap())
+                {
+                    _retryTimer!.Stop();
+                    _retryTimer = null;
+                    ActivatedAfterGrant?.Invoke();
+                }
+                else
+                {
+                    _retryTimer!.Start(); // MacTimer is one-shot; re-arm
+                }
+            };
+            _retryTimer.Start();
+        }
+    }
+
+    private static bool TryInstallTap()
+    {
         ulong mask = MacNativeMethods.EventMask(MacNativeMethods.CGEventType.KeyDown)
                    | MacNativeMethods.EventMask(MacNativeMethods.CGEventType.KeyUp)
                    | MacNativeMethods.EventMask(MacNativeMethods.CGEventType.FlagsChanged);
@@ -27,10 +63,7 @@ class MacKeyboardHook : IDisposable
             IntPtr.Zero);
 
         if (_tap == IntPtr.Zero)
-        {
-            Logger.Log("CGEventTap creation failed — accessibility permission likely not granted");
-            return;
-        }
+            return false;
 
         var source = MacNativeMethods.CFMachPortCreateRunLoopSource(IntPtr.Zero, _tap, 0);
         MacNativeMethods.CFRunLoopAddSource(
@@ -39,6 +72,7 @@ class MacKeyboardHook : IDisposable
             MacNativeMethods.kCFRunLoopDefaultMode);
 
         Logger.Log("Keyboard hook registered");
+        return true;
     }
 
     // Ring buffer for in-callback diagnostics — written without file I/O to avoid tap timeouts
