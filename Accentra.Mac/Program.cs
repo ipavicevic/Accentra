@@ -7,12 +7,12 @@ static class Program
     static void Main(string[] args)
     {
         // Shows the system permission dialog and adds Accentra to the
-        // Accessibility list on first run.
+        // Accessibility list on first run. We do NOT block on the result:
+        // AXIsProcessTrusted caches "not trusted" for the life of the process,
+        // so the app launches fully regardless and the keyboard hook retries
+        // tap creation until permission is granted (see MacKeyboardHook).
         if (!MacNativeMethods.RequestAccessibilityTrust())
-        {
             ShowAccessibilityHint();
-            return;
-        }
 
         // Kill any existing instance
         var others = Process.GetProcessesByName("Accentra")
@@ -60,7 +60,8 @@ static class Program
             MacNativeMethods.ToNSString(
                 "Accentra needs Accessibility access to intercept keystrokes.\n\n" +
                 "Enable Accentra in System Settings → Privacy & Security → Accessibility " +
-                "(it has been added to the list), then launch Accentra again."));
+                "(it has been added to the list). Accentra will start automatically " +
+                "as soon as access is granted."));
         MacNativeMethods.objc_msgSend(alert, MacNativeMethods.sel_registerName("runModal"));
     }
 }

@@ -11,6 +11,9 @@ class MacTrayApp : IDisposable
     private static MacKeyboardHook? _hook;
     private static IntPtr _pauseItem;
     private static IntPtr _startAtLoginItem;
+    private static IntPtr _permissionItem;
+    private static IntPtr _permissionSeparator;
+    private static IntPtr _statusButton;
     private static IntPtr _nsApp;
 
     private static string DisplayVersion
@@ -50,7 +53,7 @@ class MacTrayApp : IDisposable
             MacNativeMethods.sel_registerName("setActivationPolicy:"), 1);
 
         _engine = new AccentEngine();
-        _hook = new MacKeyboardHook(_engine);
+        _hook = new MacKeyboardHook(_engine) { ActivatedAfterGrant = OnPermissionGranted };
 
         var statusBar = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSStatusBar"),
@@ -64,11 +67,11 @@ class MacTrayApp : IDisposable
         // Retain the status item so it stays alive
         MacNativeMethods.objc_msgSend(statusItem, MacNativeMethods.sel_registerName("retain"));
 
-        var button = MacNativeMethods.objc_msgSend(statusItem, MacNativeMethods.sel_registerName("button"));
-        MacNativeMethods.objc_msgSend_void_id(button,
+        _statusButton = MacNativeMethods.objc_msgSend(statusItem, MacNativeMethods.sel_registerName("button"));
+        MacNativeMethods.objc_msgSend_void_id(_statusButton,
             MacNativeMethods.sel_registerName("setTitle:"),
             MacNativeMethods.ToNSString("ā"));
-        MacNativeMethods.objc_msgSend_void_id(button,
+        MacNativeMethods.objc_msgSend_void_id(_statusButton,
             MacNativeMethods.sel_registerName("setToolTip:"),
             MacNativeMethods.ToNSString($"Accentra {DisplayVersion}"));
 
@@ -77,6 +80,10 @@ class MacTrayApp : IDisposable
 
         MacNativeMethods.objc_msgSend_void_id(statusItem,
             MacNativeMethods.sel_registerName("setMenu:"), menu);
+
+        // If the keyboard hook isn't active yet (Accessibility not granted), present
+        // a distinct waiting state: dimmed icon + a "grant access" menu item.
+        SetWaitingForPermission(!_hook.IsActive);
 
         if (firstRun)
             ShowAlert("Welcome to Accentra",
@@ -122,6 +129,8 @@ class MacTrayApp : IDisposable
                 (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)&OnQuit, "v@:@");
             MacNativeMethods.class_addMethod(cls, MacNativeMethods.sel_registerName("onToggleSection:"),
                 (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)&OnToggleSection, "v@:@");
+            MacNativeMethods.class_addMethod(cls, MacNativeMethods.sel_registerName("onOpenAccessibility:"),
+                (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)&OnOpenAccessibility, "v@:@");
         }
 
         MacNativeMethods.objc_registerClassPair(cls);
@@ -135,6 +144,10 @@ class MacTrayApp : IDisposable
         var menu = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSMenu"),
             MacNativeMethods.sel_registerName("new"));
+
+        // Shown only while Accessibility permission is missing (see SetWaitingForPermission)
+        _permissionItem = AddItem(menu, target, "⚠  Enable Accessibility access…", "onOpenAccessibility:");
+        _permissionSeparator = AddSeparator(menu);
 
         _startAtLoginItem = AddItem(menu, target, "Start at Login", "onStartAtLogin:");
         SetCheckmark(_startAtLoginItem, Installer.IsAutoStartEnabled());
@@ -200,13 +213,14 @@ class MacTrayApp : IDisposable
             MacNativeMethods.sel_registerName("addItem:"), parent);
     }
 
-    private static void AddSeparator(IntPtr menu)
+    private static IntPtr AddSeparator(IntPtr menu)
     {
         var sep = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSMenuItem"),
             MacNativeMethods.sel_registerName("separatorItem"));
         MacNativeMethods.objc_msgSend_void_id(menu,
             MacNativeMethods.sel_registerName("addItem:"), sep);
+        return sep;
     }
 
     private static void SetCheckmark(IntPtr item, bool on)
@@ -216,7 +230,44 @@ class MacTrayApp : IDisposable
             MacNativeMethods.sel_registerName("setState:"), on ? 1 : 0);
     }
 
+    private static void SetHidden(IntPtr item, bool hidden) =>
+        MacNativeMethods.objc_msgSend_void_bool(item,
+            MacNativeMethods.sel_registerName("setHidden:"), hidden);
+
+    // Reflects the "waiting for Accessibility permission" state in the UI:
+    // dims the menu bar icon and swaps the permission item in for the Pause item.
+    private static void SetWaitingForPermission(bool waiting)
+    {
+        MacNativeMethods.objc_msgSend_cgfloat(_statusButton,
+            MacNativeMethods.sel_registerName("setAlphaValue:"), waiting ? 0.35 : 1.0);
+        SetHidden(_permissionItem, !waiting);
+        SetHidden(_permissionSeparator, !waiting);
+        SetHidden(_pauseItem, waiting);
+    }
+
+    // Called (on the main thread) when the hook activates after the user grants
+    // Accessibility. Clears the waiting state and confirms the app is ready.
+    private static void OnPermissionGranted()
+    {
+        SetWaitingForPermission(false);
+        ShowAlert("Accentra is ready",
+            "Accessibility access granted — Accentra is now active.\n\n" +
+            "Hold a key to enter accent mode, then press the same key to cycle variants.");
+    }
+
     // ── Action handlers (called on main thread by ObjC runtime) ──────────────
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static void OnOpenAccessibility(IntPtr self, IntPtr cmd, IntPtr sender)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(
+                "open", "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                { UseShellExecute = true });
+        }
+        catch (Exception ex) { Logger.Log($"OnOpenAccessibility error: {ex.Message}"); }
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static void OnStartAtLogin(IntPtr self, IntPtr cmd, IntPtr sender)
