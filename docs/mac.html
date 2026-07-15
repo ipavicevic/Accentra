@@ -67,6 +67,40 @@
     }
     .hero .note { margin-top: 14px; font-size: 0.85rem; opacity: 0.75; }
 
+    .brew-cmd {
+      display: inline-block; text-align: left;
+      background: rgba(0,0,0,0.30);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 10px;
+      padding: 16px 22px;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.9rem; line-height: 1.7;
+      color: #fff;
+      margin: 4px auto 10px;
+      white-space: pre; overflow-x: auto; max-width: 100%;
+    }
+    .dl-links {
+      display: block;
+      width: fit-content;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.9rem; opacity: 0.95;
+      margin: 0 auto 4px;
+      text-align: center;
+    }
+    .dl-links a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    .cmd-block {
+      background: #1e1e2e; color: #cdd6f4;
+      border-radius: var(--radius);
+      padding: 18px 22px; margin: 12px 0;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.9rem; line-height: 1.8;
+      white-space: pre; overflow-x: auto;
+    }
+
     /* ── Sections ── */
     .section { max-width: 820px; margin: 0 auto; padding: 64px 24px; }
     .section + .section { border-top: 1px solid var(--border); }
@@ -226,9 +260,13 @@
 <header class="hero">
   <div class="hero-icon">ā</div>
   <h1>Accentra</h1>
-  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Beta</p>
+  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.0.0</p>
   <p class="tagline">Accented characters in any Mac app — hold a key, cycle the variants, keep typing.</p>
-  <span class="beta-badge">In development &mdash; coming soon</span>
+  <div class="brew-cmd">brew tap ipavicevic/tap
+brew install --cask accentra</div>
+  <p class="dl-links">or download directly:<br>
+    <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-arm64.zip">Apple&nbsp;Silicon</a> &middot;
+    <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-x64.zip">Intel</a></p>
   <p class="note">Free &middot; Open source &middot; Looking for the <a href="index.html" style="color:inherit;opacity:0.8;">Windows version</a>?</p>
   <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
 </header>
@@ -290,20 +328,25 @@
 <!-- Installation -->
 <section class="section">
   <h2>Installation</h2>
-  <p>Accentra is in beta and not yet packaged for download. For now it can be built from source:</p>
+  <p>The easiest way is <a href="https://brew.sh">Homebrew</a>. The <code>brew trust</code> line is a one-time step Homebrew requires before installing a cask from a third-party tap:</p>
+  <div class="cmd-block">brew tap ipavicevic/tap
+brew trust --cask ipavicevic/tap/accentra
+brew install --cask accentra</div>
+  <p>Prefer not to use Homebrew? Download the zip for your Mac — <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-arm64.zip">Apple&nbsp;Silicon</a> or <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-x64.zip">Intel</a> — unzip it, and drag <strong>Accentra.app</strong> into your <strong>Applications</strong> folder. (Not sure which? Apple menu → About This Mac: “Apple” chip means Apple Silicon, “Intel” means Intel.)</p>
+
   <div class="install-steps">
     <div class="install-step">
       <div class="install-num"></div>
       <div class="install-step-body">
-        <h3>Clone and run</h3>
-        <p>With the <a href="https://dotnet.microsoft.com/download">.NET SDK</a> installed: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.</p>
+        <h3>Open Accentra</h3>
+        <p>Launch it from your Applications folder. The first time, macOS asks you to confirm opening an app downloaded from the internet — click <strong>Open</strong>. (Accentra is signed with an Apple Developer ID and notarized, so there's no “unidentified developer” warning.)</p>
       </div>
     </div>
     <div class="install-step">
       <div class="install-num"></div>
       <div class="install-step-body">
         <h3>Grant Accessibility access</h3>
-        <p>On first launch the <strong>ā</strong> icon appears in your menu bar right away — dimmed, with a <strong>⚠ Enable Accessibility access…</strong> item in its menu (macOS requires this permission for any app that listens to the keyboard). Click it to jump straight to <strong>System Settings → Privacy &amp; Security → Accessibility</strong> and switch <strong>Accentra</strong> on.</p>
+        <p>The <strong>ā</strong> icon appears in your menu bar right away — dimmed, with a <strong>⚠ Enable Accessibility access…</strong> item in its menu (macOS requires this permission for any app that listens to the keyboard). Click it to jump straight to <strong>System Settings → Privacy &amp; Security → Accessibility</strong> and switch <strong>Accentra</strong> on.</p>
       </div>
     </div>
     <div class="install-step">
@@ -316,7 +359,7 @@
   </div>
 
   <div class="callout">
-    <strong>A packaged, signed download is coming.</strong> When it ships, this page will get a download button just like the Windows version.
+    <strong>Building from source instead?</strong> With the <a href="https://dotnet.microsoft.com/download">.NET SDK</a>: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.
   </div>
 </section>
 
@@ -397,7 +440,7 @@
   <ul class="req-list">
     <li><span class="tick">&#10003;</span> macOS 13 Ventura or later (developed and tested on macOS 15 Sequoia)</li>
     <li><span class="tick">&#10003;</span> Accessibility permission (granted once in System Settings)</li>
-    <li><span class="tick">&#10003;</span> .NET SDK — required only while the beta is built from source</li>
+    <li><span class="tick">&#10003;</span> No runtime to install — everything is bundled in the app (the .NET SDK is only needed if you build from source)</li>
     <li><span class="tick">&#10003;</span> Works with any application that accepts physical keyboard input</li>
   </ul>
 </section>
