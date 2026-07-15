@@ -1,0 +1,71 @@
+name: Release macOS
+
+# Cut a macOS release by pushing a tag like `mac-v1.0.0`.
+# Builds both architectures, signs with Developer ID, notarizes, and publishes
+# a GitHub Release with the two zips. Independent of the Windows release.yml
+# (which triggers on pushes to main and keys off Accentra.csproj).
+
+on:
+  push:
+    tags:
+      - 'mac-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Import Developer ID signing certificate
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain"
+          KP=$(uuidgen)
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KP" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KP" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
+            -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          # Put our keychain first in the search list so codesign finds the identity
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KP" "$KEYCHAIN"
+
+      - name: Store notarization credentials
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials accentra-notary \
+            --apple-id "$NOTARY_APPLE_ID" \
+            --team-id "$NOTARY_TEAM_ID" \
+            --password "$NOTARY_PASSWORD"
+
+      - name: Build, sign, and notarize (both architectures)
+        env:
+          NOTARY_PROFILE: accentra-notary
+        run: |
+          IDENTITY="Developer ID Application: Ivan Pavicevic (${{ secrets.NOTARY_TEAM_ID }})"
+          Accentra.Mac/packaging/package-mac.sh osx-arm64 "$IDENTITY"
+          Accentra.Mac/packaging/package-mac.sh osx-x64   "$IDENTITY"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n 's/.*<FileVersion>\(.*\)<\/FileVersion>.*/\1/p' Accentra.Mac/Accentra.Mac.csproj)
+          gh release create "${{ github.ref_name }}" Accentra.Mac/dist/*.zip \
+            --title "Accentra for Mac $VERSION" \
+            --notes "Signed and notarized macOS build. Install with Homebrew (\`brew install --cask accentra\` once the tap is published) or download and unzip the matching architecture."
