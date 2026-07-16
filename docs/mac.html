@@ -67,30 +67,26 @@
     }
     .hero .note { margin-top: 14px; font-size: 0.85rem; opacity: 0.75; }
 
-    .brew-cmd {
-      display: inline-block; text-align: left;
-      background: rgba(0,0,0,0.30);
-      border: 1px solid rgba(255,255,255,0.28);
-      border-radius: 10px;
-      padding: 16px 22px;
-      font-family: "SF Mono", Menlo, Consolas, monospace;
-      font-size: 0.9rem; line-height: 1.7;
-      color: #fff;
-      margin: 4px auto 10px;
-      white-space: pre; overflow-x: auto; max-width: 100%;
+    .dl-buttons {
+      display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+      margin: 4px 0 14px;
     }
-    .dl-links {
-      display: block;
-      width: fit-content;
-      background: rgba(0,0,0,0.18);
-      border: 1px solid rgba(255,255,255,0.28);
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 0.9rem; opacity: 0.95;
-      margin: 0 auto 4px;
-      text-align: center;
+    .dl-btn {
+      display: inline-block; background: #fff; color: var(--blue);
+      font-size: 1.02rem; font-weight: 700;
+      padding: 14px 30px; border-radius: 50px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .dl-links a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .dl-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.22); text-decoration: none; }
+    .dl-btn small { display: block; font-weight: 500; font-size: 0.72rem; opacity: 0.65; margin-top: 2px; }
+    .brew-note { font-size: 0.9rem; opacity: 0.92; }
+    .brew-note code {
+      background: rgba(0,0,0,0.28); color: #fff;
+      padding: 3px 9px; border-radius: 6px;
+      font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.85rem;
+    }
+    .brew-note a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 
     .cmd-block {
       background: #1e1e2e; color: #cdd6f4;
@@ -260,13 +256,13 @@
 <header class="hero">
   <div class="hero-icon">ā</div>
   <h1>Accentra</h1>
-  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.0.0</p>
+  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.0.1</p>
   <p class="tagline">Accented characters in any Mac app — hold a key, cycle the variants, keep typing.</p>
-  <div class="brew-cmd">brew tap ipavicevic/tap
-brew install --cask accentra</div>
-  <p class="dl-links">or download directly:<br>
-    <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-arm64.zip">Apple&nbsp;Silicon</a> &middot;
-    <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-x64.zip">Intel</a></p>
+  <div class="dl-buttons">
+    <a class="dl-btn" href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.1/Accentra-1.0.1-arm64.dmg">Download<small>Apple Silicon</small></a>
+    <a class="dl-btn" href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.1/Accentra-1.0.1-x64.dmg">Download<small>Intel</small></a>
+  </div>
+  <p class="brew-note">or with Homebrew: <code>brew install --cask accentra</code></p>
   <p class="note">Free &middot; Open source &middot; Looking for the <a href="index.html" style="color:inherit;opacity:0.8;">Windows version</a>?</p>
   <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
 </header>
@@ -328,13 +324,16 @@ brew install --cask accentra</div>
 <!-- Installation -->
 <section class="section">
   <h2>Installation</h2>
-  <p>The easiest way is <a href="https://brew.sh">Homebrew</a>. The <code>brew trust</code> line is a one-time step Homebrew requires before installing a cask from a third-party tap:</p>
-  <div class="cmd-block">brew tap ipavicevic/tap
-brew trust --cask ipavicevic/tap/accentra
-brew install --cask accentra</div>
-  <p>Prefer not to use Homebrew? Download the zip for your Mac — <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-arm64.zip">Apple&nbsp;Silicon</a> or <a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.0/Accentra-1.0.0-x64.zip">Intel</a> — unzip it, and drag <strong>Accentra.app</strong> into your <strong>Applications</strong> folder. (Not sure which? Apple menu → About This Mac: “Apple” chip means Apple Silicon, “Intel” means Intel.)</p>
+  <p>Download the DMG for your Mac from the button at the top of this page (not sure which? Apple menu → About This Mac: an “Apple” chip means Apple Silicon, “Intel” means Intel), then:</p>
 
   <div class="install-steps">
+    <div class="install-step">
+      <div class="install-num"></div>
+      <div class="install-step-body">
+        <h3>Open the DMG and drag to Applications</h3>
+        <p>Double-click the downloaded <code>.dmg</code>. A window opens showing <strong>Accentra</strong> and an <strong>Applications</strong> shortcut — drag Accentra onto Applications. When it's done, eject the “Accentra” disk from your Desktop or Finder sidebar (drag it to the Trash or press <strong>⌘E</strong>).</p>
+      </div>
+    </div>
     <div class="install-step">
       <div class="install-num"></div>
       <div class="install-step-body">
@@ -359,7 +358,11 @@ brew install --cask accentra</div>
   </div>
 
   <div class="callout">
-    <strong>Building from source instead?</strong> With the <a href="https://dotnet.microsoft.com/download">.NET SDK</a>: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.
+    <strong>Prefer Homebrew?</strong> Install and update from the command line:
+    <div class="cmd-block">brew tap ipavicevic/tap
+brew trust --cask ipavicevic/tap/accentra
+brew install --cask accentra</div>
+    The <code>brew trust</code> line is a one-time step Homebrew requires before installing a cask from a third-party tap. Or build from source with the <a href="https://dotnet.microsoft.com/download">.NET SDK</a>: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.
   </div>
 </section>
 

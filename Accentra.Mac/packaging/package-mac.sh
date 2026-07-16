@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds, bundles, signs, and (optionally) notarizes Accentra.app for macOS.
+# Builds, bundles, signs, and (optionally) notarizes Accentra.app for macOS,
+# then packages it into a drag-to-Applications DMG.
 #
 # Usage:
 #   ./package-mac.sh <rid> [sign-identity]
@@ -7,10 +8,13 @@
 #   rid            osx-arm64 or osx-x64
 #   sign-identity  codesign identity ("Developer ID Application: ..."); ad-hoc if omitted
 #
+# Requires create-dmg (brew install create-dmg).
 # Notarization runs when NOTARY_PROFILE is set to a notarytool keychain profile
-# (create one with: xcrun notarytool store-credentials).
+# (create one with: xcrun notarytool store-credentials). The DMG is notarized
+# and stapled; the enclosed app is signed and notarized-by-hash (recognized
+# online on first launch).
 #
-# Output: dist/Accentra-<version>-<arch>.zip
+# Output: dist/Accentra-<version>-<arch>.dmg
 set -euo pipefail
 
 RID="${1:?usage: package-mac.sh <osx-arm64|osx-x64> [sign-identity]}"
@@ -43,9 +47,24 @@ codesign --force --options runtime --timestamp \
     --sign "$IDENTITY" "$APP"
 codesign --verify --deep --strict "$APP"
 
-ZIP="dist/Accentra-$VERSION-$ARCH.zip"
-rm -f "$ZIP"
-ditto -c -k --keepParent "$APP" "$ZIP"
+echo "==> Building DMG"
+DMG="dist/Accentra-$VERSION-$ARCH.dmg"
+rm -f "$DMG"
+hdiutil detach "/Volumes/Accentra" >/dev/null 2>&1 || true
+# create-dmg lays out the window: app on the left, arrow, Applications on the right.
+create-dmg \
+    --volname "Accentra" \
+    --background "$PKG_DIR/dmg-background.png" \
+    --window-pos 200 120 --window-size 540 380 \
+    --icon-size 100 \
+    --icon "Accentra.app" 150 175 \
+    --app-drop-link 390 175 \
+    --no-internet-enable \
+    "$DMG" "dist/$ARCH" || true
+[[ -f "$DMG" ]] || { echo "DMG creation failed"; exit 1; }
+
+echo "==> codesign DMG"
+codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
     echo "==> Notarizing (profile: $NOTARY_PROFILE)"
@@ -55,7 +74,7 @@ if [[ -n "${NOTARY_PROFILE:-}" ]]; then
     # same bytes clears in minutes — resubmit after a stall.
     STALL_SECONDS="${NOTARY_STALL_SECONDS:-600}"
     submit() {
-        xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" \
+        xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" \
             | sed -n 's/^ *id: //p' | head -1
     }
     SUBMISSION=$(submit)
@@ -79,11 +98,9 @@ if [[ -n "${NOTARY_PROFILE:-}" ]]; then
         exit 1
     fi
     echo "==> Stapling"
-    xcrun stapler staple "$APP"
-    rm -f "$ZIP"
-    ditto -c -k --keepParent "$APP" "$ZIP"
+    xcrun stapler staple "$DMG"
 else
     echo "==> Skipping notarization (NOTARY_PROFILE not set)"
 fi
 
-echo "==> Done: Accentra.Mac/$ZIP"
+echo "==> Done: Accentra.Mac/$DMG"

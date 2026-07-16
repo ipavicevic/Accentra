@@ -25,6 +25,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Import Developer ID signing certificate
         env:
           MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
@@ -66,6 +69,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(sed -n 's/.*<FileVersion>\(.*\)<\/FileVersion>.*/\1/p' Accentra.Mac/Accentra.Mac.csproj)
-          gh release create "${{ github.ref_name }}" Accentra.Mac/dist/*.zip \
+          gh release create "${{ github.ref_name }}" Accentra.Mac/dist/*.dmg \
             --title "Accentra for Mac $VERSION" \
-            --notes "Signed and notarized macOS build. Install with Homebrew (\`brew install --cask accentra\` once the tap is published) or download and unzip the matching architecture."
+            --notes "Signed and notarized macOS build. Install with Homebrew (\`brew install --cask accentra\`) or download the DMG for your architecture and drag Accentra into Applications."
