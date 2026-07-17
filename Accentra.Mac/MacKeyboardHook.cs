@@ -75,41 +75,15 @@ class MacKeyboardHook : IDisposable
         return true;
     }
 
-    // Ring buffer for in-callback diagnostics — written without file I/O to avoid tap timeouts
-    private static readonly string[] _ring = new string[64];
-    private static int _ringHead;
-    private static int _ringCount;
-
-    private static void RingLog(string s)
-    {
-        _ring[_ringHead] = s;
-        _ringHead = (_ringHead + 1) % _ring.Length;
-        if (_ringCount < _ring.Length) _ringCount++;
-    }
-
-    // Dump ring buffer to the log file; called from the main thread outside the callback
-    public static void FlushRing()
-    {
-        if (_ringCount == 0)
-        {
-            Logger.Log("FlushRing: idle");
-            return;
-        }
-        var start = _ringCount < _ring.Length ? 0 : _ringHead;
-        var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < _ringCount; i++)
-            sb.AppendLine(_ring[(start + i) % _ring.Length]);
-        Logger.Log("=== hook ring ===\n" + sb + "=================");
-        _ringCount = 0;
-    }
-
     private static IntPtr HookCallback(IntPtr proxy, MacNativeMethods.CGEventType type, IntPtr @event, IntPtr userInfo)
     {
-        // macOS disables the tap if our callback is too slow; re-enable it immediately
+        // macOS disables the tap if our callback is too slow; re-enable it immediately.
+        // Rare enough to log directly — the tap is already disabled at this point, so
+        // the file I/O cannot make a timeout worse.
         if (type is MacNativeMethods.CGEventType.TapDisabledByTimeout
                  or MacNativeMethods.CGEventType.TapDisabledByUserInput)
         {
-            RingLog($"TAP DISABLED ({type}), re-enabling");
+            Logger.Log($"Tap disabled ({type}) — re-enabling");
             MacNativeMethods.CGEventTapEnable(_tap, true);
             return @event;
         }
@@ -119,10 +93,7 @@ class MacKeyboardHook : IDisposable
         // reliable than user-data tagging, which does not survive CGEventPost.
         if (MacNativeMethods.CGEventGetIntegerValueField(@event, MacNativeMethods.CGEventField.SourceUnixProcessID)
             == Environment.ProcessId)
-        {
-            RingLog($"skip injected ({type})");
             return @event;
-        }
 
         if (type == MacNativeMethods.CGEventType.FlagsChanged)
             return @event;
@@ -140,10 +111,6 @@ class MacKeyboardHook : IDisposable
         bool cmdHeld   = (flags & MacNativeMethods.kCGEventFlagMaskCommand) != 0;
 
         char baseChar = ResolveChar(@event, shiftHeld);
-
-        // Log every non-repeat key-down into the ring buffer (no file I/O here)
-        if (isDown && !isAutoRepeat)
-            RingLog($"kc={keyCode} ch=U+{(int)baseChar:X4}('{baseChar}') ctrl={ctrlHeld} alt={altHeld} cmd={cmdHeld}");
 
         if (ctrlHeld || altHeld || cmdHeld)
             return @event;
