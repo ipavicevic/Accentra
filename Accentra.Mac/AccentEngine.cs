@@ -89,7 +89,6 @@ class AccentEngine
         _state = State.AccentMode;
         _variantIndex = 0;
         _keyIsHeld = true;
-        Logger.Log($"OnLongPress: replacing with '{_variants[0]}' (key={_trackedKey})");
         // The base character is already in the text field — replace it with the first accent.
         CharacterInjector.Replace(_variants[0]);
         RestartConfirmTimer();

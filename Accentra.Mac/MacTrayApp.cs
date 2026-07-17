@@ -91,11 +91,6 @@ class MacTrayApp : IDisposable
                 "Hold a key to enter accent mode, then press the same key to cycle through variants.");
 
         Logger.Log("MacTrayApp started");
-
-        // Periodically flush the hook's ring buffer so diagnostics reach the log file
-        var flushTimer = new MacTimer { Interval = 3000 };
-        flushTimer.Tick += (_, _) => { MacKeyboardHook.FlushRing(); flushTimer.Start(); };
-        flushTimer.Start();
     }
 
     public void Run()

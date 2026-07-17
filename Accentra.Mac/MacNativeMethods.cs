@@ -324,7 +324,8 @@ static class MacNativeMethods
         // dlsym gives us the address of that global, which IS the queue pointer value.
         var pMainQ = dlsym(rtldDefault, "_dispatch_main_q");
         var pAsync  = dlsym(rtldDefault, "dispatch_async_f");
-        Logger.Log($"LoadDispatch: _dispatch_main_q=0x{pMainQ:x} asyncF=0x{pAsync:x}");
+        if (pMainQ == IntPtr.Zero || pAsync == IntPtr.Zero)
+            Logger.Log($"LoadDispatch failed: _dispatch_main_q=0x{pMainQ:x} asyncF=0x{pAsync:x} — timers will not fire");
         _mainQueue = pMainQ;
         if (pAsync != IntPtr.Zero)
             _dispatchAsyncFProc = Marshal.GetDelegateForFunctionPointer<DispatchAsyncFProc>(pAsync);
