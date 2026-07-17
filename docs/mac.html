@@ -89,6 +89,17 @@
       font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.85rem;
     }
     .brew-note a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+    .paused {
+      max-width: 520px;
+      margin: 0 auto 8px;
+      padding: 18px 22px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.16);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .paused-title { font-weight: 700; margin-bottom: 6px; }
 
     .copy-btn {
       display: inline-flex; align-items: center; gap: 5px; vertical-align: middle;
@@ -274,13 +285,11 @@
 <header class="hero">
   <div class="hero-icon">ā</div>
   <h1>Accentra</h1>
-  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.0.1</p>
   <p class="tagline">Accented characters in any Mac app — hold a key, cycle the variants, keep typing.</p>
-  <div class="dl-buttons">
-    <a class="dl-btn" href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.1/Accentra-1.0.1-arm64.dmg">Download</a>
+  <div class="paused">
+    <p class="paused-title">Downloads are paused</p>
+    <p>A bug in 1.0.1 can delete the character before the one you accent, in apps where macOS shows its own accent picker. A fix is in progress and downloads will return once it ships.</p>
   </div>
-  <p class="dl-alt"><a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.0.1/Accentra-1.0.1-x64.dmg">Download for older Intel Mac</a></p>
-  <p class="brew-note">or <a href="#homebrew">install with Homebrew</a></p>
   <p class="note">Free &middot; Open source &middot; Looking for the <a href="index.html" style="color:inherit;opacity:0.8;">Windows version</a>?</p>
   <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
 </header>
@@ -342,7 +351,7 @@
 <!-- Installation -->
 <section class="section">
   <h2>Installation</h2>
-  <p>Use the <strong>Download</strong> button at the top of this page — it's right for any Mac from the last few years. Only on an older <strong>Intel</strong> Mac (2020 or earlier) use the “older Intel Mac” link instead. Not sure? Open the <strong>Apple menu → About This Mac</strong>: if it lists a <strong>“Chip”</strong>, use the main Download button; if it lists a <strong>“Processor”</strong>, use the Intel link. Then:</p>
+  <p><strong>Downloads are paused while a bug is fixed</strong> — see the note at the top of this page. The steps below describe how installing works, and will apply again once downloads return.</p>
 
   <div class="install-steps">
     <div class="install-step">
@@ -376,11 +385,8 @@
   </div>
 
   <div class="callout" id="homebrew">
-    <strong>Prefer Homebrew?</strong> Install and update from the command line:
-    <div class="cmd-wrap"><button class="copy-btn" data-copy="brew tap ipavicevic/tap&#10;brew trust --cask ipavicevic/tap/accentra&#10;brew install --cask accentra" onclick="copyCmd(this)" aria-label="Copy commands"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><div class="cmd-block">brew tap ipavicevic/tap
-brew trust --cask ipavicevic/tap/accentra
-brew install --cask accentra</div></div>
-    The <code>brew trust</code> line is a one-time step Homebrew requires before installing a cask from a third-party tap. Or build from source with the <a href="https://dotnet.microsoft.com/download">.NET SDK</a>: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.
+    <strong>Prefer Homebrew?</strong> Installing with Homebrew is paused too, for the same reason. It will return alongside the downloads.
+    <p style="margin-top: 10px;">You can still build from source with the <a href="https://dotnet.microsoft.com/download">.NET SDK</a>: <code>git clone https://github.com/ipavicevic/Accentra</code>, then <code>dotnet run --project Accentra.Mac/Accentra.Mac.csproj</code>.</p>
   </div>
 </section>
 
