@@ -55,6 +55,7 @@ static class MacNativeMethods
 
     // ── Constants ────────────────────────────────────────────────────────────
 
+    public const ulong kCGEventFlagMaskAlphaShift = 0x00010000; // caps lock
     public const ulong kCGEventFlagMaskShift = 0x00020000;
     public const ulong kCGEventFlagMaskControl = 0x00040000;
     public const ulong kCGEventFlagMaskAlternate = 0x00080000;
@@ -86,6 +87,9 @@ static class MacNativeMethods
 
     [DllImport(CoreGraphics)]
     public static extern ulong CGEventGetFlags(IntPtr @event);
+
+    [DllImport(CoreGraphics)]
+    public static extern void CGEventSetFlags(IntPtr @event, ulong flags);
 
     [DllImport(CoreGraphics)]
     public static extern void CGEventPost(CGEventTapLocation tap, IntPtr @event);
