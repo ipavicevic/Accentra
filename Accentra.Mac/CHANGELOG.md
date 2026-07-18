@@ -4,6 +4,15 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 (see `../CHANGELOG.md`); the shared compatibility contract is the
 `accent-maps.json` schema version, not the app version.
 
+## [1.0.4]
+
+### Changed
+- Accentra now enables **Start at Login** on first run, so an always-on utility is
+  actually running after a reboot (parity with the Windows startup task). It is only
+  set on first run — if you turn it off, it stays off — and it is announced in the
+  first-run welcome and toggleable from the menu. Accentra registers only its own
+  login item; it does not change any system-wide setting.
+
 ## [1.0.3]
 
 ### Fixed

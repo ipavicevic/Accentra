@@ -34,6 +34,12 @@ static class Program
         };
 
         bool firstRun = Installer.EnsureAccentMapsJson();
+        if (firstRun)
+            // Accentra is meant to run all the time, so enable Start at Login by default
+            // (parity with the Windows startup task). Only on genuine first run — if the
+            // user later turns it off, it stays off. Toggleable from the tray menu.
+            Installer.SetAutoStart(true);
+
         using var app = new MacTrayApp(firstRun);
         app.Run();
     }

@@ -88,7 +88,8 @@ class MacTrayApp : IDisposable
         if (firstRun)
             ShowAlert("Welcome to Accentra",
                 $"Accentra {DisplayVersion} is running in your menu bar.\n\n" +
-                "Hold a key to enter accent mode, then press the same key to cycle through variants.");
+                "Hold a key to enter accent mode, then press the same key to cycle through variants.\n\n" +
+                "Accentra will start automatically when you log in. You can turn this off any time from the menu bar icon.");
 
         Logger.Log("MacTrayApp started");
     }
