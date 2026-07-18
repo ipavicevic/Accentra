@@ -333,7 +333,7 @@
 <!-- Native picker -->
 <section class="section">
   <h2>Plays nicely with the macOS accent picker</h2>
-  <p>macOS has its own press-and-hold accent picker, and Accentra doesn't fight it — or touch its setting. While you hold a key, the native picker may pop up as usual; Accentra's replacement and cycling work independently of it, so you can keep using whichever gesture you prefer.</p>
+  <p>macOS has its own press-and-hold accent picker. Accentra takes over only the keys in its accent map: hold one of those and Accentra's replacement and cycling handle it — the native picker doesn't pop up, so the two never collide. Every other key is left completely alone, so the macOS picker still works as usual for anything Accentra doesn't map. Accentra does this per-keystroke, the moment you hold a key; it never changes the system-wide press-and-hold setting, and pausing or quitting hands every key straight back to macOS.</p>
   <div class="callout">
     <strong>Pausing Accentra</strong> (from the menu bar) instantly gives you the stock macOS behavior in every app — no relaunches, no settings changed. Quitting leaves your system exactly as macOS shipped it.
   </div>
@@ -404,8 +404,7 @@ brew install --cask accentra</div></div>
   <h2>Limitations</h2>
   <ul class="req-list">
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Password fields:</strong> macOS enables Secure Input for password fields, which bypasses keyboard listeners entirely — Accentra (correctly) cannot see or modify what you type there.</li>
-    <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Key auto-repeat:</strong> While Accentra is running, holding a key with accent variants enters accent mode instead of repeating the character. Keys without variants repeat normally.</li>
-    <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Native picker popup:</strong> The macOS accent picker may appear while you hold a key. It's harmless — Accentra's cycling works regardless — but it is visible.</li>
+    <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Key auto-repeat:</strong> While Accentra is running, holding a key in its accent map enters accent mode instead of repeating the character. Keys Accentra doesn't map repeat (or show the macOS picker) as normal.</li>
     <li><span style="color:#f59e0b; font-weight:700;">&#9888;</span> <strong>Touch Bar / dictation / on-screen keyboard:</strong> Accentra intercepts physical keyboard input only.</li>
   </ul>
 </section>
