@@ -21,9 +21,13 @@ static class Installer
 
     public static bool IsAutoStartEnabled() => File.Exists(LaunchAgentPath);
 
-    public static void ToggleAutoStart()
+    public static void ToggleAutoStart() => SetAutoStart(!IsAutoStartEnabled());
+
+    public static void SetAutoStart(bool enabled)
     {
-        if (IsAutoStartEnabled())
+        if (enabled == IsAutoStartEnabled()) return;
+
+        if (!enabled)
         {
             File.Delete(LaunchAgentPath);
             Logger.Log("Auto-start disabled (LaunchAgent removed)");
