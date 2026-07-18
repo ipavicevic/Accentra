@@ -27,40 +27,48 @@ class AccentEngine
     }
 
     // Returns true if the keystroke should be suppressed.
-    public bool ProcessKey(ushort keyCode, char baseChar, bool isDown, bool isUp, bool isAutoRepeat, bool shiftHeld)
+    public bool ProcessKey(ushort keyCode, char baseChar, bool isDown, bool isUp, bool isAutoRepeat, bool upper)
     {
         if (!Enabled) return false;
 
         switch (_state)
         {
             case State.Idle when isDown && !isAutoRepeat:
-                var variants = baseChar != '\0' ? AccentMaps.GetVariants(baseChar, shiftHeld) : null;
-                if (variants != null)
-                {
-                    _trackedKey = keyCode;
-                    _variants = variants;
-                    _state = State.WaitingForLongPress;
-                    _longPressTimer.Start();
-                }
-                // Always pass through — the character appears in the app normally.
-                return false;
+                var variants = baseChar != '\0' ? AccentMaps.GetVariants(baseChar, upper) : null;
+                if (variants == null)
+                    return false; // not a mapped key — pass through, macOS handles it natively
+
+                _trackedKey = keyCode;
+                _variants = variants;
+                _state = State.WaitingForLongPress;
+                _longPressTimer.Start();
+
+                // Suppress the physical key-down and re-type the base character ourselves
+                // as a discrete keystroke. The app then never sees a held key, so its
+                // press-and-hold picker never engages — the picker is what corrupts the
+                // text (it takes the character into a pending state that our later
+                // backspace and the picker's own resolution both act on, eating a
+                // neighbouring character). Nothing downstream means nothing to corrupt.
+                CharacterInjector.TypeKey(keyCode, upper);
+                return true;
 
             case State.WaitingForLongPress when isDown && keyCode == _trackedKey:
                 // Suppress auto-repeat for the tracked key while waiting for long-press.
                 return true;
 
             case State.WaitingForLongPress when isDown:
-                // Different key pressed — cancel tracking; both the original character and
-                // this new key pass through naturally.
+                // Different key pressed — cancel tracking and handle it as a fresh press,
+                // so a mapped key is suppressed-and-retyped rather than passed through.
                 _longPressTimer.Stop();
                 _state = State.Idle;
-                return false;
+                return ProcessKey(keyCode, baseChar, isDown, isUp, isAutoRepeat, upper);
 
             case State.WaitingForLongPress when isUp && keyCode == _trackedKey:
-                // Quick release — character is already in the text field; just cancel.
+                // Quick release — the character is already typed. Suppress the key-up too:
+                // the app never saw the matching key-down, so it must not see the up.
                 _longPressTimer.Stop();
                 _state = State.Idle;
-                return false;
+                return true;
 
             case State.AccentMode when isDown && keyCode == _trackedKey && _keyIsHeld:
                 return true; // suppress auto-repeat
@@ -75,8 +83,10 @@ class AccentEngine
                 return true;
 
             case State.AccentMode when isDown && !IsModifierKeyCode(keyCode):
+                // Confirms the accent; handle the new key as a fresh press so a mapped
+                // one is suppressed-and-retyped rather than passed through to the picker.
                 ExitAccentMode();
-                return false;
+                return ProcessKey(keyCode, baseChar, isDown, isUp, isAutoRepeat, upper);
 
             default:
                 return false;

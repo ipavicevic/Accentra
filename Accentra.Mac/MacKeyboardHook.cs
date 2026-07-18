@@ -106,6 +106,7 @@ class MacKeyboardHook : IDisposable
 
         ulong flags   = MacNativeMethods.CGEventGetFlags(@event);
         bool shiftHeld = (flags & MacNativeMethods.kCGEventFlagMaskShift) != 0;
+        bool capsOn    = (flags & MacNativeMethods.kCGEventFlagMaskAlphaShift) != 0;
         bool ctrlHeld  = (flags & MacNativeMethods.kCGEventFlagMaskControl) != 0;
         bool altHeld   = (flags & MacNativeMethods.kCGEventFlagMaskAlternate) != 0;
         bool cmdHeld   = (flags & MacNativeMethods.kCGEventFlagMaskCommand) != 0;
@@ -118,7 +119,11 @@ class MacKeyboardHook : IDisposable
         if (baseChar == '\0')
             return @event;
 
-        if (_engine!.ProcessKey(keyCode, baseChar, isDown, isUp, isAutoRepeat, shiftHeld))
+        // The engine re-types the character itself, so it needs the case the physical
+        // key would have produced. Shift and caps lock cancel out, as on macOS.
+        bool upper = shiftHeld ^ capsOn;
+
+        if (_engine!.ProcessKey(keyCode, baseChar, isDown, isUp, isAutoRepeat, upper))
             return IntPtr.Zero; // suppress
 
         return @event;
