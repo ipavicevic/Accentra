@@ -294,6 +294,27 @@ static class MacNativeMethods
     [DllImport(ObjC, EntryPoint = "objc_msgSend")]
     public static extern nint objc_msgSend_nint(IntPtr receiver, IntPtr selector);
 
+    // BOOL return with an out-error argument (e.g. registerAndReturnError:)
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static extern bool objc_msgSend_bool_ref(IntPtr receiver, IntPtr selector, ref IntPtr error);
+
+    // ── ServiceManagement (SMAppService, macOS 13+) ──────────────────────────
+
+    private const string ServiceManagement =
+        "/System/Library/Frameworks/ServiceManagement.framework/ServiceManagement";
+
+    // The SMAppService ObjC class is only registered once its framework is loaded.
+    public static void LoadServiceManagement() => dlopen(ServiceManagement, RTLD_LAZY);
+
+    // NSError.localizedDescription as a string (for logging), or "(none)".
+    public static string ErrorDescription(IntPtr nsError)
+    {
+        if (nsError == IntPtr.Zero) return "(none)";
+        var desc = objc_msgSend(nsError, sel_registerName("localizedDescription"));
+        return FromNSString(desc);
+    }
+
     // ── ObjC class creation ───────────────────────────────────────────────────
 
     [DllImport(ObjC)]
