@@ -4,15 +4,23 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 (see `../CHANGELOG.md`); the shared compatibility contract is the
 `accent-maps.json` schema version, not the app version.
 
-## [1.0.5]
+## [1.0.6]
 
 ### Fixed
-- Accentra no longer appears in the Dock. On first run before Accessibility was
-  granted, a modal "permission required" alert briefly promoted Accentra to a
-  regular (Dock) app, which left it lingering in the Dock's "recent applications"
-  list even after it reverted to a menu-bar agent. That redundant alert is removed
-  — the system permission prompt and the dimmed "waiting" tray state already guide
-  first-run setup — so Accentra stays a menu-bar-only agent throughout.
+- Accentra no longer appears in the Dock or its "recent applications" list. On
+  launch — especially a cold boot, where startup can take several seconds — the
+  app ran as a regular (Dock) app until it set its menu-bar-agent policy late in
+  startup; during that window macOS put it in the Dock and recorded it in recents,
+  where it lingered afterward. The agent policy is now set as the very first thing
+  at startup, so Accentra is never a Dock app.
+
+## [1.0.5]
+
+### Changed
+- Removed the redundant first-run "Accessibility Permission Required" alert. It
+  duplicated the system permission prompt and the dimmed "waiting" tray state, and
+  showing it briefly promoted the app to a regular (Dock) app. (This removed one
+  cause of the Dock appearance; the remaining cause is fixed in 1.0.6.)
 
 ## [1.0.4]
 
