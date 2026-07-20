@@ -4,6 +4,17 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 (see `../CHANGELOG.md`); the shared compatibility contract is the
 `accent-maps.json` schema version, not the app version.
 
+## [1.0.7]
+
+### Changed
+- Start at Login now uses Apple's `SMAppService` login-item API (macOS 13+) instead
+  of a hand-written LaunchAgent. The old LaunchAgent launched the raw binary, which
+  bypassed LaunchServices and defeated the app's menu-bar-agent (`LSUIElement`) status
+  — the reason Accentra was landing in the Dock's "recent applications" list. macOS now
+  launches the app bundle as a proper login item, so it stays a menu-bar-only agent.
+  Existing installs are migrated automatically, and Start at Login is now visible and
+  toggleable in System Settings → General → Login Items.
+
 ## [1.0.6]
 
 ### Fixed

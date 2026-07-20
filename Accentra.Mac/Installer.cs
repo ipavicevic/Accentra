@@ -19,44 +19,74 @@ static class Installer
         return true;
     }
 
-    public static bool IsAutoStartEnabled() => File.Exists(LaunchAgentPath);
+    // Auto-start uses SMAppService (macOS 13+): the system launches Accentra.app as a
+    // proper login item, honoring LSUIElement, so Accentra stays a menu-bar agent and
+    // never enters the Dock. This replaces a pre-1.0.7 hand-written LaunchAgent that
+    // bare-exec'd the binary — bypassing LaunchServices, which defeated LSUIElement and
+    // put Accentra in the Dock's "recent applications" list.
+
+    // SMAppServiceStatus values.
+    private const nint StatusEnabled = 1;
+
+    private static IntPtr MainAppService()
+    {
+        MacNativeMethods.LoadServiceManagement();
+        var cls = MacNativeMethods.objc_getClass("SMAppService");
+        if (cls == IntPtr.Zero) return IntPtr.Zero;
+        return MacNativeMethods.objc_msgSend(cls, MacNativeMethods.sel_registerName("mainAppService"));
+    }
+
+    public static bool IsAutoStartEnabled()
+    {
+        var svc = MainAppService();
+        if (svc == IntPtr.Zero) return false;
+        var status = MacNativeMethods.objc_msgSend_nint(svc, MacNativeMethods.sel_registerName("status"));
+        return status == StatusEnabled;
+    }
 
     public static void ToggleAutoStart() => SetAutoStart(!IsAutoStartEnabled());
 
     public static void SetAutoStart(bool enabled)
     {
+        RemoveLegacyLaunchAgent();
         if (enabled == IsAutoStartEnabled()) return;
 
-        if (!enabled)
-        {
-            File.Delete(LaunchAgentPath);
-            Logger.Log("Auto-start disabled (LaunchAgent removed)");
-        }
+        var svc = MainAppService();
+        if (svc == IntPtr.Zero) { Logger.Log("SMAppService unavailable — cannot set auto-start"); return; }
+
+        var sel = MacNativeMethods.sel_registerName(enabled ? "registerAndReturnError:" : "unregisterAndReturnError:");
+        IntPtr err = IntPtr.Zero;
+        bool ok = MacNativeMethods.objc_msgSend_bool_ref(svc, sel, ref err);
+        if (ok)
+            Logger.Log($"Auto-start {(enabled ? "enabled" : "disabled")} via SMAppService");
         else
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(LaunchAgentPath)!);
-            var exe = Environment.ProcessPath!;
-            File.WriteAllText(LaunchAgentPath, $"""
-                <?xml version="1.0" encoding="UTF-8"?>
-                <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-                <plist version="1.0">
-                <dict>
-                    <key>Label</key>
-                    <string>{BundleId}</string>
-                    <key>ProgramArguments</key>
-                    <array>
-                        <string>{exe}</string>
-                    </array>
-                    <key>RunAtLoad</key>
-                    <true/>
-                </dict>
-                </plist>
-                """);
-            Logger.Log($"Auto-start enabled (LaunchAgent written for {exe})");
-        }
+            Logger.Log($"SMAppService {(enabled ? "register" : "unregister")} failed: {MacNativeMethods.ErrorDescription(err)}");
     }
 
-    private static string LaunchAgentPath => Path.Combine(
+    // If a pre-1.0.7 install left the old bare-exec LaunchAgent behind, migrate it:
+    // register with SMAppService (if it was enabled) and remove the stale plist so the
+    // app is never launched the old way again. Safe to call on every startup.
+    public static void MigrateLegacyAutoStart()
+    {
+        if (!File.Exists(LegacyLaunchAgentPath)) return;
+        Logger.Log("Migrating legacy LaunchAgent auto-start to SMAppService");
+        SetAutoStart(true); // registers with SMAppService and removes the legacy plist
+    }
+
+    private static void RemoveLegacyLaunchAgent()
+    {
+        try
+        {
+            if (File.Exists(LegacyLaunchAgentPath))
+            {
+                File.Delete(LegacyLaunchAgentPath);
+                Logger.Log("Removed legacy LaunchAgent plist");
+            }
+        }
+        catch { }
+    }
+
+    private static string LegacyLaunchAgentPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Library", "LaunchAgents", $"{BundleId}.plist");
 }

@@ -46,6 +46,9 @@ static class Program
                 Logger.Log($"Unhandled exception: {ex}");
         };
 
+        // Upgraders may have the pre-1.0.7 bare-exec LaunchAgent; switch them to SMAppService.
+        Installer.MigrateLegacyAutoStart();
+
         bool firstRun = Installer.EnsureAccentMapsJson();
         if (firstRun)
             // Accentra is meant to run all the time, so enable Start at Login by default
