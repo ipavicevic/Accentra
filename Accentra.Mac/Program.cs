@@ -6,6 +6,18 @@ static class Program
 {
     static void Main(string[] args)
     {
+        // Become a menu-bar agent immediately — before any other startup work.
+        // Until this is set, the process is a regular (Dock) app, and our startup
+        // takes several seconds; during that window macOS shows Accentra in the Dock
+        // and records it in the Dock's "recent applications" list, where it lingers
+        // even after we revert to an agent. Setting the policy first keeps Accentra
+        // out of the Dock entirely. (MacTrayApp sets it again, harmlessly.)
+        var nsApp = MacNativeMethods.objc_msgSend(
+            MacNativeMethods.objc_getClass("NSApplication"),
+            MacNativeMethods.sel_registerName("sharedApplication"));
+        MacNativeMethods.objc_msgSend_void_nint(nsApp,
+            MacNativeMethods.sel_registerName("setActivationPolicy:"), 1); // Accessory
+
         // Trigger the system Accessibility prompt and register Accentra in the
         // Accessibility list on first run. We do NOT block on the result or show
         // our own alert: the app launches fully regardless (the tray shows a dimmed
