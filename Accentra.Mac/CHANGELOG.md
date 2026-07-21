@@ -4,6 +4,21 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 (see `../CHANGELOG.md`); the shared compatibility contract is the
 `accent-maps.json` schema version, not the app version.
 
+## [1.1.1]
+
+### Fixed
+- `CharacterInjector` was leaking a `CGEvent` on every injected key (every
+  accent replacement, every character typed while suppressing the native
+  press-and-hold picker) — the events were created but never released.
+  Accumulates slowly but constantly for a background utility meant to run
+  for days at a time.
+- `Start at Login` could silently fail to repoint itself at the correct
+  app path after certain reinstalls: it only checked whether the login item
+  was *enabled*, not whether it was registered at the *current* app's path,
+  so a stale registration from an old install location could linger
+  indefinitely. Now always re-registers on enable (safe to call even when
+  already correctly registered) rather than skipping based on stale status.
+
 ## [1.1.0]
 
 ### Added

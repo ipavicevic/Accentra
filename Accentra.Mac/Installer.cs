@@ -49,10 +49,18 @@ static class Installer
     public static void SetAutoStart(bool enabled)
     {
         RemoveLegacyLaunchAgent();
-        if (enabled == IsAutoStartEnabled()) return;
 
         var svc = MainAppService();
         if (svc == IntPtr.Zero) { Logger.Log("SMAppService unavailable — cannot set auto-start"); return; }
+
+        // Only the disable path short-circuits on current status: nothing to undo if
+        // it's already not enabled. The enable path always (re-)registers, even if
+        // status already reports Enabled -- a stale registration (e.g. left over from
+        // a different install path or an old build) can report Enabled while still
+        // pointing at the wrong app bundle. registerAndReturnError: is documented as
+        // safe to call when already correctly registered, so this can only ever repoint
+        // a stale entry, never break a correct one.
+        if (!enabled && !IsAutoStartEnabled()) return;
 
         var sel = MacNativeMethods.sel_registerName(enabled ? "registerAndReturnError:" : "unregisterAndReturnError:");
         IntPtr err = IntPtr.Zero;
