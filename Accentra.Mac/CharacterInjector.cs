@@ -45,7 +45,7 @@ static class CharacterInjector
         var ev = MacNativeMethods.CGEventCreateKeyboardEvent(_source, vk, keyDown);
         MacNativeMethods.CGEventSetFlags(ev, flags);
         MacNativeMethods.CGEventPost(MacNativeMethods.CGEventTapLocation.SessionEventTap, ev);
-        // CFRelease(ev) — intentionally omitted for V1; the event is consumed after post
+        MacNativeMethods.CFRelease(ev);
     }
 
     private static void PostUnicode(char c, bool keyDown)
@@ -53,5 +53,6 @@ static class CharacterInjector
         var ev = MacNativeMethods.CGEventCreateKeyboardEvent(_source, 0, keyDown);
         MacNativeMethods.CGEventKeyboardSetUnicodeString(ev, (UIntPtr)1, [c]);
         MacNativeMethods.CGEventPost(MacNativeMethods.CGEventTapLocation.SessionEventTap, ev);
+        MacNativeMethods.CFRelease(ev);
     }
 }

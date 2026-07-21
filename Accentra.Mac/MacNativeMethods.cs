@@ -113,6 +113,14 @@ static class MacNativeMethods
     public static extern void CGEventKeyboardGetUnicodeString(
         IntPtr @event, UIntPtr maxLength, out UIntPtr actualLength, char[] unicodeString);
 
+    // ── CoreFoundation memory management ─────────────────────────────────────
+
+    // Releases a CF object obtained from a "Create"-rule function (e.g.
+    // CGEventCreateKeyboardEvent) — the caller owns it and must release it;
+    // CGEventPost does not take ownership or consume it.
+    [DllImport(CoreFoundation)]
+    public static extern void CFRelease(IntPtr cf);
+
     // ── CoreFoundation run loop ───────────────────────────────────────────────
 
     // CGEventTap returns a CFMachPortRef — use CFMachPortCreateRunLoopSource (not CGEventTapCreateRunLoopSource)
