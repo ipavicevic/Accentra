@@ -93,19 +93,21 @@ class MacTrayApp : IDisposable
 
         if (AccentMaps.VersionMismatchMessage is { } versionMsg)
             ShowAlert("Accentra — accent maps updated", versionMsg);
-        else if (AccentMaps.LoadError is { } startupErr)
+        else if (AccentMaps.LoadError is not null) // exact reason is in the log, not shown to the user
         {
             if (AccentMaps.HasLastGood)
             {
-                if (ShowChoiceAlert("Accentra — accent-maps.json error",
-                        $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults for now.",
-                        "Restore Last Working Version", "Keep Built-in Defaults"))
+                if (ShowChoiceAlert("Accentra — Accent Settings Problem",
+                        "Your accent settings couldn't be read. Accentra is using its default settings for now — " +
+                        "would you like to go back to your last working settings instead?",
+                        "Revert", "Keep"))
                     AccentMaps.RestoreLastGood();
             }
             else
             {
-                ShowAlert("Accentra — accent-maps.json error",
-                    $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.");
+                ShowAlert("Accentra — Accent Settings Problem",
+                    "Your accent settings couldn't be read, so Accentra is using its default settings for now.",
+                    critical: true);
             }
         }
 
@@ -371,11 +373,21 @@ class MacTrayApp : IDisposable
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static void ShowAlert(string title, string body)
+    // NSAlertStyleCritical — stable, documented AppKit constant; gives error
+    // alerts a more prominent icon/presentation than the plain default style.
+    private const nint NSAlertStyleCritical = 2;
+
+    // NSAlertFirstButtonReturn — stable, documented AppKit constant.
+    private const nint NSAlertFirstButtonReturn = 1000;
+
+    private static void ShowAlert(string title, string body, bool critical = false)
     {
         var alert = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSAlert"),
             MacNativeMethods.sel_registerName("new"));
+        if (critical)
+            MacNativeMethods.objc_msgSend_void_nint(alert,
+                MacNativeMethods.sel_registerName("setAlertStyle:"), NSAlertStyleCritical);
         MacNativeMethods.objc_msgSend_void_id(alert,
             MacNativeMethods.sel_registerName("setMessageText:"),
             MacNativeMethods.ToNSString(title));
@@ -385,15 +397,15 @@ class MacTrayApp : IDisposable
         MacNativeMethods.objc_msgSend(alert, MacNativeMethods.sel_registerName("runModal"));
     }
 
-    // NSAlertFirstButtonReturn — stable, documented AppKit constant.
-    private const nint NSAlertFirstButtonReturn = 1000;
-
-    // Two-button alert; returns true if the user picked the first (primary) button.
+    // Two-button, critical-style alert; returns true if the user picked the
+    // first (primary) button. Always used for the restore-or-keep prompts.
     private static bool ShowChoiceAlert(string title, string body, string primaryButton, string secondaryButton)
     {
         var alert = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSAlert"),
             MacNativeMethods.sel_registerName("new"));
+        MacNativeMethods.objc_msgSend_void_nint(alert,
+            MacNativeMethods.sel_registerName("setAlertStyle:"), NSAlertStyleCritical);
         MacNativeMethods.objc_msgSend_void_id(alert,
             MacNativeMethods.sel_registerName("setMessageText:"),
             MacNativeMethods.ToNSString(title));
@@ -430,21 +442,24 @@ class MacTrayApp : IDisposable
         handle.Free();
         if (error is null)
         {
-            ShowAlert("Accentra", "Accent maps reloaded.");
+            ShowAlert("Accentra", "Your accent settings were updated.");
             return;
         }
 
+        // Exact reason is in the log (Open log file... menu item), not shown to the user.
         if (AccentMaps.HasLastGood)
         {
-            if (ShowChoiceAlert("Accentra — accent-maps.json error",
-                    $"Could not reload: {error}\n\nKeeping previous maps.",
-                    "Restore Last Working Version", "Keep Editing"))
+            if (ShowChoiceAlert("Accentra — Accent Settings Problem",
+                    "Your accent settings couldn't be read. Accentra is still using your previous settings — " +
+                    "would you like to go back to your last saved working version instead?",
+                    "Revert", "Keep"))
                 AccentMaps.RestoreLastGood();
         }
         else
         {
-            ShowAlert("Accentra — accent-maps.json error",
-                $"Could not reload: {error}\n\nKeeping previous maps.");
+            ShowAlert("Accentra — Accent Settings Problem",
+                "Your accent settings couldn't be read. Accentra is still using your previous settings.",
+                critical: true);
         }
     }
 
