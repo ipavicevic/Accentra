@@ -7,10 +7,9 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 ## [1.1.0]
 
 ### Added
-- Accentra now notifies you when `accent-maps.json` is reloaded after an edit,
+- Accentra now alerts you when `accent-maps.json` is reloaded after an edit,
   fails to parse, or gets migrated to a newer schema on startup — matching the
-  Windows app. Shown as a Notification Center banner when available, falling
-  back to an in-app alert on systems where it isn't.
+  Windows app.
 
 ## [1.0.7]
 
