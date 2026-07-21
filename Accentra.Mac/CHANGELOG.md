@@ -11,6 +11,12 @@ Notable changes to the macOS app. Versioned independently of the Windows app
   fails to parse, or gets migrated to a newer schema on startup — matching the
   Windows app.
 
+### Fixed
+- The reload watcher now detects edits saved by editors that write atomically
+  (VS Code, Xcode, and most others) instead of in place. Previously only a
+  direct in-place write was detected; an atomic save — write a temp file, then
+  rename it over the original — was invisible to the watcher.
+
 ## [1.0.7]
 
 ### Changed

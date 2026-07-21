@@ -223,11 +223,15 @@ static class AccentMaps
         if (!Directory.Exists(dir)) return;
         _watcher = new FileSystemWatcher(dir, FileName)
         {
-            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+            // FileName is required for Renamed to fire at all: most editors (VS Code,
+            // Xcode, etc.) save atomically by writing a temp file and renaming it over
+            // the original, which is invisible to Changed/Created without this.
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
             EnableRaisingEvents = true,
         };
         _watcher.Changed += OnFileChanged;
         _watcher.Created += OnFileChanged;
+        _watcher.Renamed += OnFileChanged;
     }
 
     private static void OnFileChanged(object _, FileSystemEventArgs __)
