@@ -91,6 +91,28 @@ class MacTrayApp : IDisposable
                 "Hold a key to enter accent mode, then press the same key to cycle through variants.\n\n" +
                 "Accentra will start automatically when you log in. You can turn this off any time from the menu bar icon.");
 
+        if (AccentMaps.VersionMismatchMessage is { } versionMsg)
+            ShowAlert("Accentra — accent maps updated", versionMsg);
+        else if (AccentMaps.LoadError is not null) // exact reason is in the log, not shown to the user
+        {
+            if (AccentMaps.HasLastGood)
+            {
+                if (ShowChoiceAlert("Accentra — Accent Settings Problem",
+                        "Your accent settings couldn't be read. Accentra is using its default settings for now — " +
+                        "would you like to go back to your last working settings instead?",
+                        "Revert", "Keep"))
+                    AccentMaps.RestoreLastGood();
+            }
+            else
+            {
+                ShowAlert("Accentra — Accent Settings Problem",
+                    "Your accent settings couldn't be read, so Accentra is using its default settings for now.",
+                    critical: true);
+            }
+        }
+
+        AccentMaps.Reloaded += OnAccentMapsReloaded;
+
         Logger.Log("MacTrayApp started");
     }
 
@@ -351,11 +373,21 @@ class MacTrayApp : IDisposable
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static void ShowAlert(string title, string body)
+    // NSAlertStyleCritical — stable, documented AppKit constant; gives error
+    // alerts a more prominent icon/presentation than the plain default style.
+    private const nint NSAlertStyleCritical = 2;
+
+    // NSAlertFirstButtonReturn — stable, documented AppKit constant.
+    private const nint NSAlertFirstButtonReturn = 1000;
+
+    private static void ShowAlert(string title, string body, bool critical = false)
     {
         var alert = MacNativeMethods.objc_msgSend(
             MacNativeMethods.objc_getClass("NSAlert"),
             MacNativeMethods.sel_registerName("new"));
+        if (critical)
+            MacNativeMethods.objc_msgSend_void_nint(alert,
+                MacNativeMethods.sel_registerName("setAlertStyle:"), NSAlertStyleCritical);
         MacNativeMethods.objc_msgSend_void_id(alert,
             MacNativeMethods.sel_registerName("setMessageText:"),
             MacNativeMethods.ToNSString(title));
@@ -365,8 +397,75 @@ class MacTrayApp : IDisposable
         MacNativeMethods.objc_msgSend(alert, MacNativeMethods.sel_registerName("runModal"));
     }
 
+    // Two-button, critical-style alert; returns true if the user picked the
+    // first (primary) button. Always used for the restore-or-keep prompts.
+    private static bool ShowChoiceAlert(string title, string body, string primaryButton, string secondaryButton)
+    {
+        var alert = MacNativeMethods.objc_msgSend(
+            MacNativeMethods.objc_getClass("NSAlert"),
+            MacNativeMethods.sel_registerName("new"));
+        MacNativeMethods.objc_msgSend_void_nint(alert,
+            MacNativeMethods.sel_registerName("setAlertStyle:"), NSAlertStyleCritical);
+        MacNativeMethods.objc_msgSend_void_id(alert,
+            MacNativeMethods.sel_registerName("setMessageText:"),
+            MacNativeMethods.ToNSString(title));
+        MacNativeMethods.objc_msgSend_void_id(alert,
+            MacNativeMethods.sel_registerName("setInformativeText:"),
+            MacNativeMethods.ToNSString(body));
+        MacNativeMethods.objc_msgSend_id(alert,
+            MacNativeMethods.sel_registerName("addButtonWithTitle:"),
+            MacNativeMethods.ToNSString(primaryButton));
+        MacNativeMethods.objc_msgSend_id(alert,
+            MacNativeMethods.sel_registerName("addButtonWithTitle:"),
+            MacNativeMethods.ToNSString(secondaryButton));
+        var response = MacNativeMethods.objc_msgSend_nint(alert, MacNativeMethods.sel_registerName("runModal"));
+        return response == NSAlertFirstButtonReturn;
+    }
+
+    // AccentMaps.Reloaded fires from a background debounce timer; marshal to
+    // the main thread (required for any Cocoa API) the same way MacTimer does.
+    private static readonly MacNativeMethods.DispatchFunction _reloadDispatcher = DispatchReload;
+
+    private static void OnAccentMapsReloaded(string? error)
+    {
+        var handle = GCHandle.Alloc(error);
+        MacNativeMethods.dispatch_async_f(
+            MacNativeMethods.dispatch_get_main_queue(),
+            GCHandle.ToIntPtr(handle),
+            _reloadDispatcher);
+    }
+
+    private static void DispatchReload(IntPtr context)
+    {
+        var handle = GCHandle.FromIntPtr(context);
+        var error = (string?)handle.Target;
+        handle.Free();
+        if (error is null)
+        {
+            ShowAlert("Accentra", "Your accent settings were updated.");
+            return;
+        }
+
+        // Exact reason is in the log (Open log file... menu item), not shown to the user.
+        if (AccentMaps.HasLastGood)
+        {
+            if (ShowChoiceAlert("Accentra — Accent Settings Problem",
+                    "Your accent settings couldn't be read. Accentra is still using your previous settings — " +
+                    "would you like to go back to your last saved working version instead?",
+                    "Revert", "Keep"))
+                AccentMaps.RestoreLastGood();
+        }
+        else
+        {
+            ShowAlert("Accentra — Accent Settings Problem",
+                "Your accent settings couldn't be read. Accentra is still using your previous settings.",
+                critical: true);
+        }
+    }
+
     public void Dispose()
     {
+        AccentMaps.Reloaded -= OnAccentMapsReloaded;
         _hook?.Dispose();
         _hook = null;
     }

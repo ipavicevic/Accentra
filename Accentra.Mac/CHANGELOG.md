@@ -4,6 +4,26 @@ Notable changes to the macOS app. Versioned independently of the Windows app
 (see `../CHANGELOG.md`); the shared compatibility contract is the
 `accent-maps.json` schema version, not the app version.
 
+## [1.1.0]
+
+### Added
+- Accentra now alerts you when `accent-maps.json` is reloaded after an edit,
+  fails to parse, or gets migrated to a newer schema on startup — matching the
+  Windows app.
+- When a load or reload fails, Accentra now offers **Revert** (restore your
+  last working configuration) or **Keep** (leave the file as-is) instead of
+  just reporting the error. A snapshot of your accent maps is kept up to date
+  (`accent-maps.lastgood.json`, alongside `accent-maps.json`) every time a
+  load succeeds, so a broken edit is always one click away from being undone.
+  Error alerts use a plain, non-technical message and a more prominent
+  (critical-style) presentation; the exact parse error is still in the log.
+
+### Fixed
+- The reload watcher now detects edits saved by editors that write atomically
+  (VS Code, Xcode, and most others) instead of in place. Previously only a
+  direct in-place write was detected; an atomic save — write a temp file, then
+  rename it over the original — was invisible to the watcher.
+
 ## [1.0.7]
 
 ### Changed
