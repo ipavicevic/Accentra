@@ -91,6 +91,14 @@ class MacTrayApp : IDisposable
                 "Hold a key to enter accent mode, then press the same key to cycle through variants.\n\n" +
                 "Accentra will start automatically when you log in. You can turn this off any time from the menu bar icon.");
 
+        if (AccentMaps.VersionMismatchMessage is { } versionMsg)
+            Notify("Accentra — accent maps updated", versionMsg);
+        else if (AccentMaps.LoadError is { } startupErr)
+            Notify("Accentra — accent-maps.json error",
+                $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.");
+
+        AccentMaps.Reloaded += OnAccentMapsReloaded;
+
         Logger.Log("MacTrayApp started");
     }
 
@@ -365,8 +373,74 @@ class MacTrayApp : IDisposable
         MacNativeMethods.objc_msgSend(alert, MacNativeMethods.sel_registerName("runModal"));
     }
 
+    private static bool? _hasUserNotificationCenter;
+
+    private static bool HasUserNotificationCenter()
+    {
+        if (_hasUserNotificationCenter is { } cached) return cached;
+        var has = MacNativeMethods.objc_getClass("NSUserNotificationCenter") != IntPtr.Zero;
+        _hasUserNotificationCenter = has;
+        if (!has)
+            Logger.Log("NSUserNotificationCenter unavailable — falling back to modal alerts");
+        return has;
+    }
+
+    // Non-modal Notification Center banner when available; falls back to the
+    // modal ShowAlert if Apple ever removes NSUserNotificationCenter (deprecated
+    // since macOS 10.14, but still functioning). Message-to-nil in Objective-C
+    // never crashes, so this can only ever degrade gracefully, never break.
+    private static void Notify(string title, string body)
+    {
+        if (!HasUserNotificationCenter())
+        {
+            ShowAlert(title, body);
+            return;
+        }
+
+        var notification = MacNativeMethods.objc_msgSend(
+            MacNativeMethods.objc_msgSend(MacNativeMethods.objc_getClass("NSUserNotification"),
+                MacNativeMethods.sel_registerName("alloc")),
+            MacNativeMethods.sel_registerName("init"));
+        MacNativeMethods.objc_msgSend_void_id(notification,
+            MacNativeMethods.sel_registerName("setTitle:"), MacNativeMethods.ToNSString(title));
+        MacNativeMethods.objc_msgSend_void_id(notification,
+            MacNativeMethods.sel_registerName("setInformativeText:"), MacNativeMethods.ToNSString(body));
+
+        var center = MacNativeMethods.objc_msgSend(
+            MacNativeMethods.objc_getClass("NSUserNotificationCenter"),
+            MacNativeMethods.sel_registerName("defaultUserNotificationCenter"));
+        MacNativeMethods.objc_msgSend_void_id(center,
+            MacNativeMethods.sel_registerName("deliverNotification:"), notification);
+    }
+
+    // AccentMaps.Reloaded fires from a background debounce timer; marshal to
+    // the main thread (required for any Cocoa API) the same way MacTimer does.
+    private static readonly MacNativeMethods.DispatchFunction _reloadDispatcher = DispatchReload;
+
+    private static void OnAccentMapsReloaded(string? error)
+    {
+        var handle = GCHandle.Alloc(error);
+        MacNativeMethods.dispatch_async_f(
+            MacNativeMethods.dispatch_get_main_queue(),
+            GCHandle.ToIntPtr(handle),
+            _reloadDispatcher);
+    }
+
+    private static void DispatchReload(IntPtr context)
+    {
+        var handle = GCHandle.FromIntPtr(context);
+        var error = (string?)handle.Target;
+        handle.Free();
+        if (error is null)
+            Notify("Accentra", "Accent maps reloaded.");
+        else
+            Notify("Accentra — accent-maps.json error",
+                $"Could not reload: {error}\n\nKeeping previous maps.");
+    }
+
     public void Dispose()
     {
+        AccentMaps.Reloaded -= OnAccentMapsReloaded;
         _hook?.Dispose();
         _hook = null;
     }
