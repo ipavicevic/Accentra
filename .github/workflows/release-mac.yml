@@ -72,3 +72,71 @@ jobs:
           gh release create "${{ github.ref_name }}" Accentra.Mac/dist/*.dmg \
             --title "Accentra for Mac $VERSION" \
             --notes "Signed and notarized macOS build. Install with Homebrew (\`brew install --cask accentra\`) or download the DMG for your architecture and drag Accentra into Applications."
+
+      # Skips itself for dev/test versions (X.Y.Z.N) -- only a clean release
+      # version (X.Y.Z, the 4th part dropped per the versioning policy before
+      # tagging) updates the public cask. Regenerates the cask file fresh from
+      # a template rather than sed-patching it in place, to avoid the empty-cask
+      # failure mode a partial patch can produce if a prior step didn't run.
+      - name: Bump Homebrew cask
+        env:
+          DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          VERSION=$(sed -n 's/.*<FileVersion>\(.*\)<\/FileVersion>.*/\1/p' Accentra.Mac/Accentra.Mac.csproj)
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version $VERSION carries a dev/test 4th part -- skipping cask bump."
+            exit 0
+          fi
+
+          ARM_SHA=$(shasum -a 256 "Accentra.Mac/dist/Accentra-$VERSION-arm64.dmg" | cut -d' ' -f1)
+          X64_SHA=$(shasum -a 256 "Accentra.Mac/dist/Accentra-$VERSION-x64.dmg" | cut -d' ' -f1)
+
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/homebrew_tap_deploy
+          chmod 600 ~/.ssh/homebrew_tap_deploy
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/homebrew_tap_deploy -o IdentitiesOnly=yes"
+
+          git clone git@github.com:ipavicevic/homebrew-tap.git /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          cat > Casks/accentra.rb << CASK
+          cask "accentra" do
+            arch arm: "arm64", intel: "x64"
+
+            version "$VERSION"
+            sha256 arm:   "$ARM_SHA",
+                   intel: "$X64_SHA"
+
+            url "https://github.com/ipavicevic/Accentra/releases/download/mac-v#{version}/Accentra-#{version}-#{arch}.dmg"
+            name "Accentra"
+            desc "Type accented characters by holding a key and cycling through variants"
+            homepage "https://ipavicevic.github.io/Accentra/mac.html"
+
+            depends_on macos: :ventura
+
+            app "Accentra.app"
+
+            caveats <<~CAVEATS
+              Accentra needs Accessibility permission to intercept keystrokes.
+              On first launch, enable Accentra in:
+                System Settings → Privacy & Security → Accessibility
+              Accentra activates itself the moment you flip the switch — no relaunch needed.
+            CAVEATS
+
+            zap trash: [
+              "~/Library/Application Support/Accentra",
+              "~/Library/LaunchAgents/com.accentra.Accentra.plist",
+            ]
+          end
+          CASK
+
+          git config user.name "accentra-release-bot"
+          git config user.email "accentra-release-bot@users.noreply.github.com"
+          git add Casks/accentra.rb
+          if git diff --cached --quiet; then
+            echo "Cask already up to date."
+          else
+            git commit -m "Update accentra to $VERSION"
+            git push origin main
+          fi
