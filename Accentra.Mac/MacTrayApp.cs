@@ -94,8 +94,20 @@ class MacTrayApp : IDisposable
         if (AccentMaps.VersionMismatchMessage is { } versionMsg)
             ShowAlert("Accentra — accent maps updated", versionMsg);
         else if (AccentMaps.LoadError is { } startupErr)
-            ShowAlert("Accentra — accent-maps.json error",
-                $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.");
+        {
+            if (AccentMaps.HasLastGood)
+            {
+                if (ShowChoiceAlert("Accentra — accent-maps.json error",
+                        $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults for now.",
+                        "Restore Last Working Version", "Keep Built-in Defaults"))
+                    AccentMaps.RestoreLastGood();
+            }
+            else
+            {
+                ShowAlert("Accentra — accent-maps.json error",
+                    $"Could not load your accent maps: {startupErr}\n\nUsing built-in defaults.");
+            }
+        }
 
         AccentMaps.Reloaded += OnAccentMapsReloaded;
 
@@ -373,6 +385,31 @@ class MacTrayApp : IDisposable
         MacNativeMethods.objc_msgSend(alert, MacNativeMethods.sel_registerName("runModal"));
     }
 
+    // NSAlertFirstButtonReturn — stable, documented AppKit constant.
+    private const nint NSAlertFirstButtonReturn = 1000;
+
+    // Two-button alert; returns true if the user picked the first (primary) button.
+    private static bool ShowChoiceAlert(string title, string body, string primaryButton, string secondaryButton)
+    {
+        var alert = MacNativeMethods.objc_msgSend(
+            MacNativeMethods.objc_getClass("NSAlert"),
+            MacNativeMethods.sel_registerName("new"));
+        MacNativeMethods.objc_msgSend_void_id(alert,
+            MacNativeMethods.sel_registerName("setMessageText:"),
+            MacNativeMethods.ToNSString(title));
+        MacNativeMethods.objc_msgSend_void_id(alert,
+            MacNativeMethods.sel_registerName("setInformativeText:"),
+            MacNativeMethods.ToNSString(body));
+        MacNativeMethods.objc_msgSend_id(alert,
+            MacNativeMethods.sel_registerName("addButtonWithTitle:"),
+            MacNativeMethods.ToNSString(primaryButton));
+        MacNativeMethods.objc_msgSend_id(alert,
+            MacNativeMethods.sel_registerName("addButtonWithTitle:"),
+            MacNativeMethods.ToNSString(secondaryButton));
+        var response = MacNativeMethods.objc_msgSend_nint(alert, MacNativeMethods.sel_registerName("runModal"));
+        return response == NSAlertFirstButtonReturn;
+    }
+
     // AccentMaps.Reloaded fires from a background debounce timer; marshal to
     // the main thread (required for any Cocoa API) the same way MacTimer does.
     private static readonly MacNativeMethods.DispatchFunction _reloadDispatcher = DispatchReload;
@@ -392,10 +429,23 @@ class MacTrayApp : IDisposable
         var error = (string?)handle.Target;
         handle.Free();
         if (error is null)
+        {
             ShowAlert("Accentra", "Accent maps reloaded.");
+            return;
+        }
+
+        if (AccentMaps.HasLastGood)
+        {
+            if (ShowChoiceAlert("Accentra — accent-maps.json error",
+                    $"Could not reload: {error}\n\nKeeping previous maps.",
+                    "Restore Last Working Version", "Keep Editing"))
+                AccentMaps.RestoreLastGood();
+        }
         else
+        {
             ShowAlert("Accentra — accent-maps.json error",
                 $"Could not reload: {error}\n\nKeeping previous maps.");
+        }
     }
 
     public void Dispose()

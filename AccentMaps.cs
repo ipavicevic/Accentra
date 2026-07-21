@@ -7,6 +7,7 @@ static class AccentMaps
 {
     private const string ResourceName = "Accentra.accent-maps.json";
     private const string FileName = "accent-maps.json";
+    private const string LastGoodFileName = "accent-maps.lastgood.json";
     private const int ExpectedVersion = 2;
 
     private record Section(string Name, bool Enabled, Dictionary<char, char[]> Maps);
@@ -38,6 +39,11 @@ static class AccentMaps
 
     public static string? LoadError { get; private set; }
     public static string? VersionMismatchMessage { get; private set; }
+
+    // Whether a last-known-good snapshot exists to offer as a restore option
+    // when the primary file fails to load or reload.
+    public static bool HasLastGood =>
+        File.Exists(Path.Combine(Installer.AccentMapsDir, LastGoodFileName));
 
     // null = success, error string = failure; only fires on external file reload
     public static event Action<string?>? Reloaded;
@@ -107,11 +113,13 @@ static class AccentMaps
                         : $"Your accent maps (v{fileVersion}) are newer than this version of Accentra expects. They have been backed up as accent-maps.v{fileVersion}.backup.json and reset to defaults.";
 
                     var fresh = ParseFile(embedded);
+                    SaveLastGood(embedded);
                     return (fresh, Merge(fresh));
                 }
 
                 var sections = ParseFile(json);
                 Logger.Log($"AccentMaps loaded from {dataPath}");
+                SaveLastGood(json);
                 return (sections, Merge(sections));
             }
             catch (Exception ex)
@@ -248,13 +256,15 @@ static class AccentMaps
         var path = Path.Combine(Installer.AccentMapsDir, FileName);
         try
         {
-            var sections = ParseFile(File.ReadAllText(path));
+            var json = File.ReadAllText(path);
+            var sections = ParseFile(json);
             lock (_sectionsLock)
             {
                 _sections = sections;
                 _maps = Merge(sections);
             }
             LoadError = null;
+            SaveLastGood(json);
             Logger.Log($"AccentMaps reloaded: {path}");
             Reloaded?.Invoke(null);
         }
@@ -263,6 +273,47 @@ static class AccentMaps
             LoadError = ex.Message;
             Logger.Log($"AccentMaps reload failed: {ex.Message}");
             Reloaded?.Invoke(ex.Message);
+        }
+    }
+
+    private static void SaveLastGood(string json)
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(Installer.AccentMapsDir, LastGoodFileName), json);
+        }
+        catch (Exception ex) { Logger.Log($"AccentMaps could not update last-known-good backup: {ex.Message}"); }
+    }
+
+    // Overwrites the (presumably broken) primary file with the last-known-good
+    // snapshot and adopts it in memory immediately. Returns true on success.
+    public static bool RestoreLastGood()
+    {
+        var lastGoodPath = Path.Combine(Installer.AccentMapsDir, LastGoodFileName);
+        if (!File.Exists(lastGoodPath)) return false;
+        try
+        {
+            var json = File.ReadAllText(lastGoodPath);
+            var sections = ParseFile(json);
+            var path = Path.Combine(Installer.AccentMapsDir, FileName);
+
+            if (_watcher != null) _watcher.EnableRaisingEvents = false;
+            try { File.WriteAllText(path, json); }
+            finally { if (_watcher != null) _watcher.EnableRaisingEvents = true; }
+
+            lock (_sectionsLock)
+            {
+                _sections = sections;
+                _maps = Merge(sections);
+            }
+            LoadError = null;
+            Logger.Log("AccentMaps restored from last-known-good backup");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"AccentMaps restore from backup failed: {ex.Message}");
+            return false;
         }
     }
 
