@@ -6,10 +6,14 @@ RESOURCE_GROUP="Accentra-Mac"
 FUNCTION_APP="accentra-mac-dl"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# ACCENTRA_EXCLUDED_IPS: comma-separated public IPs to exclude from download
+# activity logging (e.g. the maintainer's own machine, for testing). Set this
+# in your own shell profile -- never committed, this repo is public.
 echo "=== [1/2] Deploying Azure resources ==="
 az deployment group create \
   --resource-group "$RESOURCE_GROUP" \
   --template-file "$REPO_ROOT/infra/main.bicep" \
+  --parameters excludedIps="${ACCENTRA_EXCLUDED_IPS:-}" \
   --output table
 
 echo ""

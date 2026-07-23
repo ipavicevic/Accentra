@@ -10,6 +10,9 @@ param functionStorageAccountName string = 'accentramacdlfunc'
 @description('Application Insights name')
 param appInsightsName string = '${functionAppName}-insights'
 
+@description('Comma-separated public IPs (v4 and/or v6) to exclude from download activity logging -- e.g. the maintainers own machine, so manual testing does not pollute real activity counts. Intentionally not committed with a real value (this repo is public); pass at deploy time instead.')
+param excludedIps string = ''
+
 // ============================================================================
 // App Service Plan (Linux Consumption)
 // ============================================================================
@@ -103,6 +106,10 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
         {
           name: 'APPLICATIONINSIGHTS_RESOURCE_ID'
           value: appInsights.id
+        }
+        {
+          name: 'EXCLUDED_IPS'
+          value: excludedIps
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
