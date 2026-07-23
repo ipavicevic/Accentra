@@ -6,3 +6,5 @@ publish/
 .claude/
 Assets/
 dist/
+node_modules/
+local.settings.json
