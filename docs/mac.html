@@ -274,12 +274,12 @@
 <header class="hero">
   <div class="hero-icon">ā</div>
   <h1>Accentra</h1>
-  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.1.0</p>
+  <p style="font-size: 1rem; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.04em;">Version 1.1.1</p>
   <p class="tagline">Accented characters in any Mac app — hold a key, cycle the variants, keep typing.</p>
   <div class="dl-buttons">
-    <a class="dl-btn" href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.1.0/Accentra-1.1.0-arm64.dmg">Download</a>
+    <a class="dl-btn" href="https://accentra-mac-dl.azurewebsites.net/api/mac/arm64">Download</a>
   </div>
-  <p class="dl-alt"><a href="https://github.com/ipavicevic/Accentra/releases/download/mac-v1.1.0/Accentra-1.1.0-x64.dmg">Download for older Intel Mac</a></p>
+  <p class="dl-alt"><a href="https://accentra-mac-dl.azurewebsites.net/api/mac/x64">Download for older Intel Mac</a></p>
   <p class="brew-note">or <a href="#homebrew">install with Homebrew</a></p>
   <p class="note">Free &middot; Open source &middot; Looking for the <a href="index.html" style="color:inherit;opacity:0.8;">Windows version</a>?</p>
   <p class="credit">Code generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
@@ -468,15 +468,16 @@ brew install --cask accentra</div></div>
 <!-- Privacy Policy -->
 <section class="section" id="privacy">
   <h2>Privacy Policy</h2>
-  <p>Accentra does not collect, store, or transmit any personal data.</p>
+  <p>Accentra — the app itself — does not collect, store, or transmit any personal data.</p>
   <ul class="req-list">
     <li><span class="tick">&#10003;</span> <strong>No keylogging:</strong> Keystrokes are processed locally in real time solely to detect long-press timing and inject accented characters. They are never recorded or stored.</li>
     <li><span class="tick">&#10003;</span> <strong>Never sees your passwords:</strong> macOS turns on Secure Input for password fields, which hides your typing from every keyboard utility — Accentra included. Accentra never receives, sees, or modifies what you type into a standard password field.</li>
     <li><span class="tick">&#10003;</span> <strong>No network access:</strong> Accentra makes no network connections of any kind.</li>
-    <li><span class="tick">&#10003;</span> <strong>No telemetry:</strong> No usage data, crash reports, or analytics are collected.</li>
+    <li><span class="tick">&#10003;</span> <strong>No telemetry:</strong> No usage data, crash reports, or analytics are collected by the app.</li>
     <li><span class="tick">&#10003;</span> <strong>No third-party services:</strong> Accentra has no dependencies on external services or APIs.</li>
     <li><span class="tick">&#10003;</span> <strong>Local data only:</strong> The only files written to disk are <code>accent-maps.json</code> (your accent configuration) and a local diagnostic log — both stay on your Mac.</li>
   </ul>
+  <p style="margin-top: 16px;"><strong>About this website's Download button:</strong> clicking it logs a timestamp, your Mac's CPU architecture (Apple Silicon or Intel), and your country (resolved from your network address, which is never stored) — purely so the maintainer can see download activity over time. No IP address is ever stored, no per-person tracking of any kind, and this activity log is public: <a href="https://accentra-mac-dl.azurewebsites.net/api/stats">view it here</a>.</p>
 </section>
 
 <!-- Known issues -->
